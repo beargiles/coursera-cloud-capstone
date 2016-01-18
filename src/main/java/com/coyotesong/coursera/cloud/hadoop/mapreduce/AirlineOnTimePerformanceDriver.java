@@ -217,7 +217,7 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
 
             delays.add(w);
             while (delays.size() > n) {
-                delays.remove(delays.first());
+                delays.remove(delays.last());
             }
         }
 
