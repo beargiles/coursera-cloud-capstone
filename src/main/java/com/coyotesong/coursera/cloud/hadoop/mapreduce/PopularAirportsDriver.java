@@ -28,8 +28,8 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
 import com.coyotesong.coursera.cloud.domain.AirportInfo;
-import com.coyotesong.coursera.cloud.hadoop.CSVParser;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportFlightsWritable;
+import com.coyotesong.coursera.cloud.util.CSVParser;
 
 /**
  * Hadoop driver that identifies the most popular airports by total

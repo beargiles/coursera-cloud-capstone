@@ -1,4 +1,4 @@
-package com.coyotesong.coursera.cloud.hadoop;
+package com.coyotesong.coursera.cloud.util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,9 +18,11 @@ public class CSVParser {
         final List<String> results = new ArrayList<>();
         final Stack<State> state = new Stack<>();
         final StringBuilder sb = new StringBuilder();
+        boolean hasData = false;
 
         state.push(State.START);
         for (char ch : s.toCharArray()) {
+            hasData = true;
             switch (state.peek()) {
             case START:
                 if (ch == ',') {
@@ -50,6 +52,10 @@ public class CSVParser {
             }
         }
 
+        if (hasData) {
+            results.add(sb.toString());
+        }
+        
         assert state.size() == 1 && state.peek() == State.START;
 
         return results;

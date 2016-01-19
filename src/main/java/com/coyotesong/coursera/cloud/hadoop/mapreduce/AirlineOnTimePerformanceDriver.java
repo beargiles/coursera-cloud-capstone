@@ -30,9 +30,9 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
 import com.coyotesong.coursera.cloud.domain.AirlineInfo;
-import com.coyotesong.coursera.cloud.hadoop.CSVParser;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
+import com.coyotesong.coursera.cloud.util.CSVParser;
 
 /**
  * Hadoop driver that identifies the airlines with the best on-time arrival
