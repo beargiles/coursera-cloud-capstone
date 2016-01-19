@@ -56,9 +56,9 @@ public class PopularAirportsDriver extends Configured implements Tool {
         job.setMapOutputKeyClass(IntWritable.class);
         job.setMapOutputValueClass(IntWritable.class);
 
-        job.setMapperClass(PopularAirportsMap.class);
-        job.setReducerClass(PopularAirportsReduce.class);
-        job.setCombinerClass(PopularAirportsReduce.class);
+        job.setMapperClass(GatherFlightsMap.class);
+        job.setReducerClass(GatherFlightsReduce.class);
+        job.setCombinerClass(GatherFlightsReduce.class);
 
         FileInputFormat.setInputPaths(job, input);
         FileOutputFormat.setOutputPath(job, output);
@@ -115,7 +115,7 @@ public class PopularAirportsDriver extends Configured implements Tool {
      * entry for both origin and destination. The total number of arrivals
      * and departures should be roughly the same for every airport.
      */
-    public static class PopularAirportsMap extends Mapper<LongWritable, Text, IntWritable, IntWritable> {
+    public static class GatherFlightsMap extends Mapper<LongWritable, Text, IntWritable, IntWritable> {
         private static final IntWritable ONE = new IntWritable(1);
 
         @Override
@@ -139,7 +139,7 @@ public class PopularAirportsDriver extends Configured implements Tool {
     /**
      * The reducer adds up the number of flights at each airport.
      */
-    public static class PopularAirportsReduce extends Reducer<IntWritable, IntWritable, IntWritable, IntWritable> {
+    public static class GatherFlightsReduce extends Reducer<IntWritable, IntWritable, IntWritable, IntWritable> {
         @Override
         protected void reduce(IntWritable key, Iterable<IntWritable> values,
                 Reducer<IntWritable, IntWritable, IntWritable, IntWritable>.Context context)
