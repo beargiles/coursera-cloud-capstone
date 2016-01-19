@@ -115,8 +115,7 @@ public class AirlineFlightDelaysWritable extends ArrayWritable implements Compar
     }
 
     /**
-     * Add records. We only do this if the delay is greater than zero - we do
-     * not consider early arrivals in our statistics.
+     * Add records.
      * 
      * @param x
      */
@@ -125,15 +124,13 @@ public class AirlineFlightDelaysWritable extends ArrayWritable implements Compar
             throw new IllegalArgumentException("airlineIds do not match!");
         }
 
-        if (x.getDelay() > 0) {
-            IntWritable ints[] = new IntWritable[5];
-            ints[0] = new IntWritable(getAirlineId());
-            ints[1] = new IntWritable(getNumFlights() + x.getNumFlights());
-            ints[2] = new IntWritable(getDelay() + x.getDelay());
-            ints[3] = new IntWritable(getDelaySquared() + x.getDelaySquared());
-            ints[4] = new IntWritable(Math.max(getMaxDelay(), x.getMaxDelay()));
-            set(ints);
-        }
+        IntWritable ints[] = new IntWritable[5];
+        ints[0] = new IntWritable(getAirlineId());
+        ints[1] = new IntWritable(getNumFlights() + x.getNumFlights());
+        ints[2] = new IntWritable(getDelay() + x.getDelay());
+        ints[3] = new IntWritable(getDelaySquared() + x.getDelaySquared());
+        ints[4] = new IntWritable(Math.max(getMaxDelay(), x.getMaxDelay()));
+        set(ints);
     }
 
     @Override

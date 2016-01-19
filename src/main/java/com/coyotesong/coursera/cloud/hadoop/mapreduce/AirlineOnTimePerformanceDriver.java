@@ -141,7 +141,7 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
             String arrDelayStr = values.get(17);
             final int idx = arrDelayStr.indexOf('.');
             if (idx > 0) {
-                arrDelayStr = arrDelayStr.substring(0, idx-1);
+                arrDelayStr = arrDelayStr.substring(0, idx);
             }
             if (airlineIdStr.matches("[0-9]+") && arrDelayStr.matches("-?[0-9]+")) {
                 final int airlineId = Integer.parseInt(airlineIdStr);
@@ -179,7 +179,7 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
             final String[] values = value.toString().split(",");
             final int[] ints = new int[4];
             for (int i = 0; i < ints.length; i++) {
-                if (values[i].matches("[0-9]+")) {
+                if (values[i].matches("-?[0-9]+")) {
                     ints[i] = Integer.parseInt(values[i]);
                 }
             }
