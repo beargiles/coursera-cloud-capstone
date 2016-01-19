@@ -9,12 +9,14 @@ import org.apache.hadoop.io.IntWritable;
  * performance.
  * 
  * We are specifically concerned about the 95th percentile of the arrival delay
- * time. That is, we want to know the maximum delay on 19 out of 20 flights.
- * The final 1-in-20 delays are probably due to exceptional circumstances and
- * we don't want to unduly penalize the airline. 
+ * time. That is, we want to know the maximum delay on 19 out of 20 flights. The
+ * final 1-in-20 delays are probably due to exceptional circumstances and we
+ * don't want to unduly penalize the airline.
  * 
  * The comparator compares two objects on the basis of their mean delay + two
- * standard deviations. This corresponds to the 95th percentile of the delay.
+ * standard deviations. This corresponds to the 95th percentile of the delay. It
+ * does NOT implement WritableComparable since the comparison is not on the
+ * 'key'.
  * 
  * @author bgiles
  */
@@ -133,10 +135,44 @@ public class AirlineFlightDelaysWritable extends ArrayWritable implements Compar
             set(ints);
         }
     }
-    
+
+    @Override
+    public int hashCode() {
+        return getAirlineId();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        AirlineFlightDelaysWritable other = (AirlineFlightDelaysWritable) obj;
+        if (getAirlineId() != other.getAirlineId())
+            return false;
+        if (getNumFlights() != other.getNumFlights())
+            return false;
+        if (getDelay() != other.getDelay())
+            return false;
+        if (getDelaySquared() != other.getDelaySquared())
+            return false;
+        if (getMaxDelay() != other.getMaxDelay())
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("AirlineFlightDelays %d, %d, %d, %d, %d", getAirlineId(), getNumFlights(), getDelay(),
+                getDelaySquared(), getMaxDelay());
+    }
+
     /**
      * Compare records according to two standard deviations above mean.
      */
+    @Override
     public int compareTo(AirlineFlightDelaysWritable w) {
         double lhs = getMean() + 2 * getStdDev();
         double rhs = w.getMean() + 2 * w.getStdDev();

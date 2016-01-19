@@ -28,4 +28,35 @@ public class AirportFlightsWritable extends ArrayWritable {
     public int getFlights() {
         return ((IntWritable) get()[1]).get();
     }
+    
+    @Override
+    public int hashCode() {
+        return (getAirportId() << 6) + getFlights();
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (!(obj instanceof AirportFlightsWritable)) {
+            return false;
+        }
+        AirportFlightsWritable w = (AirportFlightsWritable) obj;
+        if (getAirportId() != w.getAirportId()) {
+            return false;
+        }
+        if (getFlights() != w.getFlights()) {
+            return false;
+        }
+        return true;
+    }
+    
+    @Override
+    public String toString() {
+        return String.format("[AirportFlights %d, %d]", getAirportId(), getFlights());
+    }
 }
