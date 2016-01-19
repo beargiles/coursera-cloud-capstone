@@ -117,19 +117,26 @@ public class PopularAirportsDriver extends Configured implements Tool {
      */
     public static class GatherFlightsMap extends Mapper<LongWritable, Text, IntWritable, IntWritable> {
         private static final IntWritable ONE = new IntWritable(1);
+        private int originIdx = 8;
+        private int destinationIdx = 11;
 
+        @Override
+        protected void setup(Mapper<LongWritable, Text, IntWritable, IntWritable>.Context context) {
+            // TODO: retrieve originIdx and destinationIdx from configuration
+        }
+        
         @Override
         protected void map(LongWritable key, Text value,
                 Mapper<LongWritable, Text, IntWritable, IntWritable>.Context context)
                         throws IOException, InterruptedException {
             final List<String> values = CSVParser.parse(value.toString());
 
-            final String originId = values.get(8);
+            final String originId = values.get(originIdx);
             if (originId.matches("[0-9]+")) {
                 context.write(new IntWritable(Integer.parseInt(originId)), ONE);
             }
 
-            final String destinationId = values.get(11);
+            final String destinationId = values.get(destinationIdx);
             if (destinationId.matches("[0-9]+")) {
                 context.write(new IntWritable(Integer.parseInt(destinationId)), ONE);
             }

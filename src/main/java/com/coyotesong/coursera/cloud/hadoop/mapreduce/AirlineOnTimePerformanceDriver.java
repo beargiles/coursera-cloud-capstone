@@ -141,6 +141,16 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
      */
     public static class GatherArrivalDelayMap
             extends Mapper<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> {
+        private int airlineIdx = 5;
+        private int arrDelayIdx = 17;
+        private int cancelledIdx = 18;
+        private int divertedIdx = 19;
+
+        @Override
+        protected void setup(Mapper<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable>.Context context) {
+            // TODO: retrieve indexes
+        }
+
         @Override
         protected void map(LongWritable key, Text value,
                 Mapper<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable>.Context context)
@@ -148,15 +158,15 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
             final List<String> values = CSVParser.parse(value.toString());
 
             // do not consider cancelled or diverted flights.
-            final boolean cancelled = !"0.00".equals(values.get(18));
-            final boolean diverted = !"0.00".equals(values.get(19));
+            final boolean cancelled = !"0.00".equals(values.get(cancelledIdx));
+            final boolean diverted = !"0.00".equals(values.get(divertedIdx));
             if (cancelled || diverted) {
                 return;
             }
             
             // get airlineID and arrival delay.
-            final String airlineIdStr = values.get(5);
-            String arrDelayStr = values.get(17);
+            final String airlineIdStr = values.get(airlineIdx);
+            String arrDelayStr = values.get(arrDelayIdx);
             final int idx = arrDelayStr.indexOf('.');
             if (idx > 0) {
                 arrDelayStr = arrDelayStr.substring(0, idx);
