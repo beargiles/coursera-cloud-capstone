@@ -57,6 +57,30 @@ public class AirlineOnTimePerformanceDriverTest {
     }
 
     /**
+     * Test GatherArrivalDelayMap - it should not consider cancelled flights.
+     */
+    @Test
+    public void testArrivalDelayMapCancelledFlight() throws IOException {
+        final MapDriver<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> driver = new MapDriver<>();
+        driver.withMapper(new AirlineOnTimePerformanceDriver.GatherArrivalDelayMap());
+        driver.withInput(new LongWritable(0), new Text(
+                "2015,1,1,4,2015-01-01,19805,\"N787AA\",\"1\",12478,1247802,31703,12892,1289203,32575,\"0900\",-5.00,\"1230\",7.00,1.00,0.00,"));
+        driver.runTest();
+    }
+
+    /**
+     * Test GatherArrivalDelayMap - it should not consider diverted flights.
+     */
+    @Test
+    public void testArrivalDelayMapDivertedFlight() throws IOException {
+        final MapDriver<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> driver = new MapDriver<>();
+        driver.withMapper(new AirlineOnTimePerformanceDriver.GatherArrivalDelayMap());
+        driver.withInput(new LongWritable(0), new Text(
+                "2015,1,1,4,2015-01-01,19805,\"N787AA\",\"1\",12478,1247802,31703,12892,1289203,32575,\"0900\",-5.00,\"1230\",7.00,0.00,1.00,"));
+        driver.runTest();
+    }
+
+    /**
      * Test GatherArrivalDelayReduce. It should combine the arrival delay
      * information.
      */
@@ -93,6 +117,19 @@ public class AirlineOnTimePerformanceDriverTest {
         driver.withInput(new IntWritable(19805), Arrays.asList(new AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 })));
         driver.withOutput(NullWritable.get(), new Text(" 30.770 -6.000 American Airlines Inc."));
         driver.runTest();
+    }
+    
+    /**
+     * Test CompareArrivalDelayReduce - verify only the top 25 airlines
+     * are compared.
+     * 
+     * @throws Exception
+     */
+    @Test
+    @Ignore
+    public void testCompareArrivalDelayReduceTopAirlines() throws IOException {
+        final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
+        // FIXME: implement
     }
     
     @Test

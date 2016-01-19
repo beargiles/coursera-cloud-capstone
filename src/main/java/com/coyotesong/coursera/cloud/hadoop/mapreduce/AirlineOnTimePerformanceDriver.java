@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,18 +35,26 @@ import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
 
 /**
- * Hadoop driver that identifies the airlines with the best on-time
- * arrival performance.
+ * Hadoop driver that identifies the airlines with the best on-time arrival
+ * performance.
  * 
- * "Arrival performance" can be measured in many different ways. Compare
- * airline A where you will always be 6 minutes late with airline B where
- * you will be on-time 90% of the time but an hour late for the rest. Is one
- * better than the other? The average delay is the same.
+ * "Arrival performance" can be measured in many different ways. Compare airline
+ * A where you will always be 6 minutes late with airline B where you will be
+ * on-time 90% of the time but an hour late for the rest. Is one better than the
+ * other? The average delay is the same.
  * 
- * I have decided to go with the 95th-percentile of the arrival delay as
- * my measure of arrival performance. The final 1-in-20 flights may be
- * delayed due to exceptional circumstances where a delay is preferable
- * to flying in bad weather, flying with minor mechanical concerns, etc.
+ * I have decided to go with the 95th-percentile of the arrival delay as my
+ * measure of arrival performance. The final 1-in-20 flights may be delayed due
+ * to exceptional circumstances where a delay is preferable to flying in bad
+ * weather, flying with minor mechanical concerns, etc.
+ * 
+ * It also doesn't make sense to compare an airline with one daily flight
+ * between small airports with the major carriers. Therefore I limit the
+ * statistics to the top 25 carriers as measured by number of flights.
+ * 
+ * (I think the usual metric is passenger miles and I could estimate that using
+ * the recorded number of miles and type of aircraft but for now I'll assume
+ * that all flights have the same number of passengers.)
  *
  * @author bgiles
  */
@@ -53,8 +62,8 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
     private static final File ROOT = new File("/media/router/Documents/Coursera Cloud");
 
     /**
-     * Set up first job - it reads input files and creates a
-     * file containing the airline ID and basic arrival delay statistics.
+     * Set up first job - it reads input files and creates a file containing the
+     * airline ID and basic arrival delay statistics.
      * 
      * @param input
      * @param output
@@ -74,17 +83,17 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
 
         FileInputFormat.setInputPaths(job, input);
         FileOutputFormat.setOutputPath(job, output);
-        
+
         job.setOutputFormatClass(AirlineFlightDelaysOutputFormat.class);
 
         job.setJarByClass(AirlineOnTimePerformanceDriver.class);
 
         return job;
     }
-    
+
     /**
-     * Set up second job - it reads file containing airline ID and
-     * arrival statistics and performs the final comparisons.
+     * Set up second job - it reads file containing airline ID and arrival
+     * statistics and performs the final comparisons.
      */
     public Job setupSecondJob(Path input, Path output) throws IOException {
         Job job = Job.getInstance(this.getConf(), "Top Airlines");
@@ -108,7 +117,7 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
 
         return job;
     }
-    
+
     /**
      * Run task. Arguments are INPUT DIR, OUTPUT DIR, TEMP DIR
      *
@@ -130,13 +139,22 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
      * The mapper reads one line of the CSV file and produces a (airline, delay)
      * entry. The mapper output is designed to allow the use of a combiner.
      */
-    public static class GatherArrivalDelayMap extends Mapper<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> {
+    public static class GatherArrivalDelayMap
+            extends Mapper<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> {
         @Override
         protected void map(LongWritable key, Text value,
                 Mapper<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable>.Context context)
                         throws IOException, InterruptedException {
             final List<String> values = CSVParser.parse(value.toString());
 
+            // do not consider cancelled or diverted flights.
+            final boolean cancelled = !"0.00".equals(values.get(18));
+            final boolean diverted = !"0.00".equals(values.get(19));
+            if (cancelled || diverted) {
+                return;
+            }
+            
+            // get airlineID and arrival delay.
             final String airlineIdStr = values.get(5);
             String arrDelayStr = values.get(17);
             final int idx = arrDelayStr.indexOf('.');
@@ -154,7 +172,8 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
     /**
      * The reducer adds up the delays for each airline
      */
-    public static class GatherArrivalDelayReduce extends Reducer<IntWritable, AirlineFlightDelaysWritable, IntWritable, AirlineFlightDelaysWritable> {
+    public static class GatherArrivalDelayReduce
+            extends Reducer<IntWritable, AirlineFlightDelaysWritable, IntWritable, AirlineFlightDelaysWritable> {
         @Override
         protected void reduce(IntWritable key, Iterable<AirlineFlightDelaysWritable> values,
                 Reducer<IntWritable, AirlineFlightDelaysWritable, IntWritable, AirlineFlightDelaysWritable>.Context context)
@@ -173,8 +192,9 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
     public static class CompareArrivalDelayMap extends Mapper<Text, Text, IntWritable, AirlineFlightDelaysWritable> {
 
         @Override
-        protected void map(Text key, Text value, Mapper<Text, Text, IntWritable, AirlineFlightDelaysWritable>.Context context)
-                throws IOException, InterruptedException {
+        protected void map(Text key, Text value,
+                Mapper<Text, Text, IntWritable, AirlineFlightDelaysWritable>.Context context)
+                        throws IOException, InterruptedException {
             final Integer airlineId = Integer.parseInt(key.toString());
             final String[] values = value.toString().split(",");
             final int[] ints = new int[4];
@@ -190,14 +210,29 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
     /**
      * This reducer finds the top N records. TODO: allow N to be specified.
      */
-    public static class CompareArrivalDelayReduce extends Reducer<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> {
+    public static class CompareArrivalDelayReduce
+            extends Reducer<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> {
         private Integer n;
-        private TreeSet<AirlineFlightDelaysWritable> delays = new TreeSet<>();
+        private TreeSet<AirlineFlightDelaysWritable> airlines;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             final Configuration conf = context.getConfiguration();
             this.n = conf.getInt("N", 10);
+
+            // we initially sort the airlines by most flights (or miles)
+            airlines = new TreeSet<AirlineFlightDelaysWritable>() {
+                private static final long serialVersionUID = 1;
+
+                @Override
+                public Comparator<AirlineFlightDelaysWritable> comparator() {
+                    return new Comparator<AirlineFlightDelaysWritable>() {
+                        public int compare(AirlineFlightDelaysWritable x, AirlineFlightDelaysWritable y) {
+                            return x.getNumFlights() - y.getNumFlights();
+                        }
+                    };
+                }
+            };
         }
 
         /**
@@ -215,9 +250,9 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
                 w.add(airline);
             }
 
-            delays.add(w);
-            while (delays.size() > n) {
-                delays.remove(delays.last());
+            airlines.add(w);
+            while (airlines.size() > 25) {
+                airlines.remove(airlines.last());
             }
         }
 
@@ -241,20 +276,17 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
                 }
             }
 
+            // we now sort airlines by on-time arrival statistics
+            final TreeSet<AirlineFlightDelaysWritable> delays = new TreeSet<>(airlines);
+            
             for (AirlineFlightDelaysWritable delay : delays) {
                 final int airlineId = delay.getAirlineId();
                 if (air.containsKey(airlineId)) {
-                    context.write(NullWritable.get(),
-                            new Text(String.format("%7.3f %6.3f %s",
-                                    delay.getMean() + 2 * delay.getStdDev(),
-                                    delay.getMean(),
-                                    air.get(airlineId).getName())));
+                    context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f %s",
+                            delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), air.get(airlineId).getName())));
                 } else {
-                    context.write(NullWritable.get(),
-                            new Text(String.format("%7.3f %6.3f (unknown: %d)",
-                                    delay.getMean() + 2 * delay.getStdDev(),
-                                    delay.getMean(),
-                                    airlineId)));
+                    context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f (unknown: %d)",
+                            delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), airlineId)));
                 }
             }
         }
