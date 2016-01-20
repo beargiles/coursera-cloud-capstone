@@ -1,16 +1,11 @@
 package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
-import java.util.HashMap;
+import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeSet;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -27,9 +22,9 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
-import com.coyotesong.coursera.cloud.domain.AirportInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportFlightsWritable;
 import com.coyotesong.coursera.cloud.util.CSVParser;
+import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
  * Hadoop driver that identifies the most popular airports by total
@@ -38,7 +33,6 @@ import com.coyotesong.coursera.cloud.util.CSVParser;
  * @author bgiles
  */
 public class PopularAirportsDriver extends Configured implements Tool {
-    private static final File ROOT = new File("/media/router/Documents/Coursera Cloud");
 
     /**
      * Set up first job - it reads input files and creates a
@@ -184,6 +178,15 @@ public class PopularAirportsDriver extends Configured implements Tool {
         protected void setup(Context context) throws IOException, InterruptedException {
             final Configuration conf = context.getConfiguration();
             this.n = conf.getInt("N", 10);
+
+            // load AIRPORTS lookup table.
+            for (URI uri : context.getCacheArchives()) {
+                if ("file".equals(uri.getScheme())) {
+                    if (uri.getPath().endsWith("rita-static.zip")) {
+                        LookupUtil.load(new File(uri.getPath()));
+                    }
+                }
+            }
         }
 
         /**
@@ -214,24 +217,12 @@ public class PopularAirportsDriver extends Configured implements Tool {
         protected void cleanup(Reducer<NullWritable, AirportFlightsWritable, IntWritable, Text>.Context context)
                 throws IOException, InterruptedException {
 
-            final Map<Integer, AirportInfo> air = new HashMap<>();
-            try (Reader r = new FileReader(new File(ROOT, "485012853_T_MASTER_CORD.csv"))) {
-                for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
-                    final String id = record.get(1);
-                    if (id.matches("[0-9]+")) {
-                        final AirportInfo info = new AirportInfo(Integer.valueOf(id), record.get(3), record.get(4),
-                                record.get(8), record.get(6));
-                        air.put(info.getAirportId(), info);
-                    }
-                }
-            }
-
             for (Pair<Integer, Integer> airport : airports) {
                 final int flights = airport.getKey();
                 final int airportId = airport.getValue();
-                if (air.containsKey(airportId)) {
+                if (LookupUtil.AIRPORTS.containsKey(airportId)) {
                     context.write(new IntWritable(flights),
-                            new Text(String.format("%s", air.get(airportId).getName())));
+                            new Text(String.format("%s", LookupUtil.AIRPORTS.get(airportId).getName())));
                 } else {
                     context.write(new IntWritable(flights), new Text(String.format("unknown (%d)", airportId)));
                 }

@@ -1,11 +1,10 @@
 package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -17,8 +16,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test class to compare on-time arrival performance.
@@ -111,6 +108,7 @@ public class AirlineOnTimePerformanceDriverTest {
     /**
      * Test CompareArrivalDelayMap. It does nothing but combine the key and
      * value into a new tuple.
+     * @throws URISyntaxException 
      */
     @Test
     public void testCompareArrivalDelayMap() throws IOException {
@@ -123,10 +121,14 @@ public class AirlineOnTimePerformanceDriverTest {
 
     /**
      * Test CompareArrivalDelayReduce.
+     * @throws URISyntaxException 
      */
     @Test
-    public void testCompareArrivalDelayReduce() throws IOException {
+    public void testCompareArrivalDelayReduce() throws IOException, URISyntaxException {
         final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
+        final URI uri = this.getClass().getClassLoader().getResource("rita-static.zip").toURI();
+        driver.setCacheArchives(new URI[] { uri });
+
         driver.withReducer(new AirlineOnTimePerformanceDriver.CompareArrivalDelayReduce());
         driver.withInput(new IntWritable(19805),
                 Arrays.asList(new AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 })));
@@ -136,13 +138,18 @@ public class AirlineOnTimePerformanceDriverTest {
 
     /**
      * Test GatherArrivalDelayMap and GatherArrvalDelayReduce.
+     * 
+     * @throws URISyntaxException
      */
     @Test
-    public void testCompareArrivalDelayMapReduce() throws IOException {
+    public void testCompareArrivalDelayMapReduce() throws IOException, URISyntaxException {
         final AirlineOnTimePerformanceDriver.CompareArrivalDelayMap mapper = new AirlineOnTimePerformanceDriver.CompareArrivalDelayMap();
         final AirlineOnTimePerformanceDriver.CompareArrivalDelayReduce reducer = new AirlineOnTimePerformanceDriver.CompareArrivalDelayReduce();
         final MapReduceDriver<Text, Text, IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new MapReduceDriver<>(
                 mapper, reducer);
+        final URI uri = this.getClass().getClassLoader().getResource("rita-static.zip").toURI();
+        driver.setCacheArchives(new URI[] { uri });
+
         driver.withInput(new Text("19805"), new Text("2,-12,410,7"));
         driver.withOutput(NullWritable.get(), new Text(" 30.770 -6.000 American Airlines Inc."));
         driver.runTest();
@@ -160,22 +167,4 @@ public class AirlineOnTimePerformanceDriverTest {
         final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
         // FIXME: implement
     }
-
-    @Test
-    @Ignore
-    public void demonstrate() throws Exception {
-        final File ROOT = new File("/media/router/Documents/Coursera Cloud");
-        final File ONTIME_FILE = new File(ROOT, "360692348_T_ONTIME.csv");
-
-        final AirlineOnTimePerformanceDriver driver = new AirlineOnTimePerformanceDriver();
-        driver.setConf(new Configuration());
-
-        final File tempdir = Files.createTempDirectory("airline_ontime_").toFile();
-        final File workdir = new File(tempdir, "work");
-        final File output = new File(tempdir, "output");
-
-        assertTrue(driver.run(new String[] { ONTIME_FILE.getAbsolutePath(), output.getAbsolutePath(),
-                workdir.getAbsolutePath() }) == 1);
-    }
-
 }

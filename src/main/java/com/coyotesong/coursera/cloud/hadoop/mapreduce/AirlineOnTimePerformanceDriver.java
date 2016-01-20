@@ -1,17 +1,12 @@
 package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
+import java.net.URI;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeSet;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -29,10 +24,10 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
-import com.coyotesong.coursera.cloud.domain.AirlineInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
 import com.coyotesong.coursera.cloud.util.CSVParser;
+import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
  * Hadoop driver that identifies the airlines with the best on-time arrival
@@ -59,7 +54,6 @@ import com.coyotesong.coursera.cloud.util.CSVParser;
  * @author bgiles
  */
 public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
-    private static final File ROOT = new File("/media/router/Documents/Coursera Cloud");
 
     /**
      * Set up first job - it reads input files and creates a file containing the
@@ -163,7 +157,7 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
             if (cancelled || diverted) {
                 return;
             }
-            
+
             // get airlineID and arrival delay.
             final String airlineIdStr = values.get(airlineIdx);
             String arrDelayStr = values.get(arrDelayIdx);
@@ -230,6 +224,15 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
             final Configuration conf = context.getConfiguration();
             this.n = conf.getInt("N", 10);
 
+            // load AIRLINES lookup table.
+            for (URI uri : context.getCacheArchives()) {
+                if ("file".equals(uri.getScheme())) {
+                    if (uri.getPath().endsWith("rita-static.zip")) {
+                        LookupUtil.load(new File(uri.getPath()));
+                    }
+                }
+            }
+
             // we initially sort the airlines by most flights (or miles)
             airlines = new TreeSet<AirlineFlightDelaysWritable>() {
                 private static final long serialVersionUID = 1;
@@ -275,25 +278,15 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
         protected void cleanup(Reducer<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text>.Context context)
                 throws IOException, InterruptedException {
 
-            final Map<Integer, AirlineInfo> air = new HashMap<>();
-            try (Reader r = new FileReader(new File(ROOT, "485012853_T_CARRIER_DECODE.csv"))) {
-                for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
-                    String id = record.get(0);
-                    if (id.matches("[0-9]+")) {
-                        AirlineInfo info = new AirlineInfo(Integer.valueOf(id), record.get(3));
-                        air.put(info.getAirlineId(), info);
-                    }
-                }
-            }
-
             // we now sort airlines by on-time arrival statistics
             final TreeSet<AirlineFlightDelaysWritable> delays = new TreeSet<>(airlines);
-            
+
             for (AirlineFlightDelaysWritable delay : delays) {
                 final int airlineId = delay.getAirlineId();
-                if (air.containsKey(airlineId)) {
-                    context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f %s",
-                            delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), air.get(airlineId).getName())));
+                if (LookupUtil.AIRLINES.containsKey(airlineId)) {
+                    context.write(NullWritable.get(),
+                            new Text(String.format("%7.3f %6.3f %s", delay.getMean() + 2 * delay.getStdDev(),
+                                    delay.getMean(), LookupUtil.AIRLINES.get(airlineId).getName())));
                 } else {
                     context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f (unknown: %d)",
                             delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), airlineId)));
