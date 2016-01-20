@@ -26,10 +26,6 @@ import static org.junit.Assert.assertTrue;
  * @author bgiles
  */
 public class AirlineOnTimePerformanceDriverTest {
-    private static final File ROOT = new File("/media/router/Documents/Coursera Cloud");
-    private static final File ONTIME_FILE = new File(ROOT, "360692348_T_ONTIME.csv");
-    private static final File OUTPUT = new File("/tmp/count");
-
     static {
         System.setProperty("hadoop.home.dir", "/opt/hadoop");
         try {
@@ -168,13 +164,17 @@ public class AirlineOnTimePerformanceDriverTest {
     @Test
     @Ignore
     public void demonstrate() throws Exception {
+        final File ROOT = new File("/media/router/Documents/Coursera Cloud");
+        final File ONTIME_FILE = new File(ROOT, "360692348_T_ONTIME.csv");
+
         final AirlineOnTimePerformanceDriver driver = new AirlineOnTimePerformanceDriver();
         driver.setConf(new Configuration());
 
-        final File tempdir = Files.createTempDirectory("airlineOntime_").toFile();
+        final File tempdir = Files.createTempDirectory("airline_ontime_").toFile();
         final File workdir = new File(tempdir, "work");
+        final File output = new File(tempdir, "output");
 
-        assertTrue(driver.run(new String[] { ONTIME_FILE.getAbsolutePath(), OUTPUT.getAbsolutePath(),
+        assertTrue(driver.run(new String[] { ONTIME_FILE.getAbsolutePath(), output.getAbsolutePath(),
                 workdir.getAbsolutePath() }) == 1);
     }
 
