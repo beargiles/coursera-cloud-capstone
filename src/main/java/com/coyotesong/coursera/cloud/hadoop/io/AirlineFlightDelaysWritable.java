@@ -1,7 +1,10 @@
 package com.coyotesong.coursera.cloud.hadoop.io;
 
-import org.apache.hadoop.io.ArrayWritable;
-import org.apache.hadoop.io.IntWritable;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
+import org.apache.hadoop.io.Writable;
 
 /**
  * Writable containing (airlineId, flight delay statistics) tuples. This class
@@ -20,67 +23,55 @@ import org.apache.hadoop.io.IntWritable;
  * 
  * @author bgiles
  */
-public class AirlineFlightDelaysWritable extends ArrayWritable implements Comparable<AirlineFlightDelaysWritable> {
+public class AirlineFlightDelaysWritable implements Writable, Comparable<AirlineFlightDelaysWritable> {
+    private int airlineId;
+    private int numFlights;
+    private int delay;
+    private int delaySquared;
+    private int maxDelay;
+    private int miles;
+    
     public AirlineFlightDelaysWritable() {
-        super(IntWritable.class);
-        IntWritable[] ints = new IntWritable[5];
-        for (int i = 0; i < ints.length; i++) {
-            ints[i] = new IntWritable(0);
-        }
-        set(ints);
     }
 
     public AirlineFlightDelaysWritable(int airlineId) {
-        super(IntWritable.class);
-        IntWritable[] ints = new IntWritable[5];
-        ints[0] = new IntWritable(airlineId);
-        ints[1] = new IntWritable(0);
-        ints[2] = new IntWritable(0);
-        ints[3] = new IntWritable(0);
-        ints[4] = new IntWritable(0);
-        set(ints);
+        this.airlineId = airlineId;
     }
 
     public AirlineFlightDelaysWritable(int airlineId, int delay) {
-        super(IntWritable.class);
-        IntWritable[] ints = new IntWritable[5];
-        ints[0] = new IntWritable(airlineId);
-        ints[1] = new IntWritable(1);
-        ints[2] = new IntWritable(delay);
-        ints[3] = new IntWritable(delay * delay);
-        ints[4] = new IntWritable(delay);
-        set(ints);
+        this.airlineId = airlineId;
+        this.numFlights = 1;
+        this.delay = delay;
+        this.delaySquared = delay * delay;
+        this.maxDelay = delay;
     }
 
     public AirlineFlightDelaysWritable(int airlineId, int[] values) {
-        super(IntWritable.class);
-        IntWritable[] ints = new IntWritable[5];
-        ints[0] = new IntWritable(airlineId);
-        ints[1] = new IntWritable(values[0]);
-        ints[2] = new IntWritable(values[1]);
-        ints[3] = new IntWritable(values[2]);
-        ints[4] = new IntWritable(values[3]);
-        set(ints);
+        this.airlineId = airlineId;
+        this.numFlights = values[0];
+        this.delay = values[1];
+        this.delaySquared = values[2];
+        this.maxDelay = values[3];
     }
 
     public int getAirlineId() {
-        return ((IntWritable) get()[0]).get();
+        return airlineId;
     }
 
     public int getNumFlights() {
-        return ((IntWritable) get()[1]).get();
+        return numFlights;
     }
 
     public int getDelay() {
-        return ((IntWritable) get()[2]).get();
+        return delay;
     }
 
     public int getDelaySquared() {
-        return ((IntWritable) get()[3]).get();
+        return delaySquared;
     }
 
     public int getMaxDelay() {
-        return ((IntWritable) get()[4]).get();
+        return maxDelay;
     }
 
     /**
@@ -89,8 +80,8 @@ public class AirlineFlightDelaysWritable extends ArrayWritable implements Compar
      * @return
      */
     public double getMean() {
-        int flights = getNumFlights();
-        double mean = getDelay();
+        int flights = numFlights;
+        double mean = delay;
         if (flights > 1) {
             mean /= flights;
         }
@@ -104,14 +95,34 @@ public class AirlineFlightDelaysWritable extends ArrayWritable implements Compar
      * @return
      */
     public double getStdDev() {
-        int flights = getNumFlights();
+        int flights = numFlights;
         double stddev = 0;
         if (flights > 1) {
-            double x = (double) getDelay();
-            double x2 = (double) getDelaySquared();
+            double x = (double) delay;
+            double x2 = (double) delaySquared;
             stddev = Math.sqrt((x2 - (x * x / flights)) / (flights - 1));
         }
         return stddev;
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(airlineId);
+        out.writeInt(numFlights);
+        out.writeInt(delay);
+        out.writeInt(delaySquared);
+        out.writeInt(maxDelay);
+        out.writeInt(miles);
+    }
+
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        airlineId = in.readInt();
+        numFlights = in.readInt();
+        delay = in.readInt();
+        delaySquared = in.readInt();
+        maxDelay = in.readInt();
+        miles = in.readInt();
     }
 
     /**
@@ -120,22 +131,20 @@ public class AirlineFlightDelaysWritable extends ArrayWritable implements Compar
      * @param x
      */
     public void add(AirlineFlightDelaysWritable x) {
-        if (getAirlineId() != x.getAirlineId()) {
+        if (airlineId != x.airlineId) {
             throw new IllegalArgumentException("airlineIds do not match!");
         }
 
-        IntWritable ints[] = new IntWritable[5];
-        ints[0] = new IntWritable(getAirlineId());
-        ints[1] = new IntWritable(getNumFlights() + x.getNumFlights());
-        ints[2] = new IntWritable(getDelay() + x.getDelay());
-        ints[3] = new IntWritable(getDelaySquared() + x.getDelaySquared());
-        ints[4] = new IntWritable(Math.max(getMaxDelay(), x.getMaxDelay()));
-        set(ints);
+        numFlights += x.numFlights;
+        delay += x.delay;
+        delaySquared += x.delaySquared;
+        maxDelay = Math.max(maxDelay, x.maxDelay);
+        miles += x.miles;
     }
 
     @Override
     public int hashCode() {
-        return getAirlineId();
+        return airlineId;
     }
 
     @Override
@@ -147,23 +156,25 @@ public class AirlineFlightDelaysWritable extends ArrayWritable implements Compar
         if (getClass() != obj.getClass())
             return false;
         AirlineFlightDelaysWritable other = (AirlineFlightDelaysWritable) obj;
-        if (getAirlineId() != other.getAirlineId())
+        if (airlineId != other.airlineId)
             return false;
-        if (getNumFlights() != other.getNumFlights())
+        if (numFlights != other.numFlights)
             return false;
-        if (getDelay() != other.getDelay())
+        if (delay != other.delay)
             return false;
-        if (getDelaySquared() != other.getDelaySquared())
+        if (delaySquared != other.delaySquared)
             return false;
-        if (getMaxDelay() != other.getMaxDelay())
+        if (maxDelay != other.maxDelay)
+            return false;
+        if (miles != other.miles)
             return false;
         return true;
     }
 
     @Override
     public String toString() {
-        return String.format("AirlineFlightDelays %d, %d, %d, %d, %d", getAirlineId(), getNumFlights(), getDelay(),
-                getDelaySquared(), getMaxDelay());
+        return String.format("[AirlineFlightDelays %d, %d, %d, %d, %d]", airlineId, numFlights, delay,
+                delaySquared, maxDelay);
     }
 
     /**

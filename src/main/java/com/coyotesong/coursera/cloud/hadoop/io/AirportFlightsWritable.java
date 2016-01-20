@@ -1,62 +1,75 @@
 package com.coyotesong.coursera.cloud.hadoop.io;
 
-import org.apache.hadoop.io.ArrayWritable;
-import org.apache.hadoop.io.IntWritable;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
+import org.apache.hadoop.io.Writable;
 
 /**
  * Writable containing (airportId, flights) tuples.
  * 
  * @author bgiles
  */
-public class AirportFlightsWritable extends ArrayWritable {
+public class AirportFlightsWritable implements Writable {
+    private int airportId;
+    private int flights;
+    
     public AirportFlightsWritable() {
-        super(IntWritable.class);
     }
 
     public AirportFlightsWritable(int airportId, int flights) {
-        super(IntWritable.class);
-        IntWritable[] ints = new IntWritable[2];
-        ints[0] = new IntWritable(airportId);
-        ints[1] = new IntWritable(flights);
-        set(ints);
+        this.airportId = airportId;
+        this.flights = flights;
     }    
     
     public int getAirportId() {
-        return ((IntWritable) get()[0]).get();
+        return airportId;
     }
     
     public int getFlights() {
-        return ((IntWritable) get()[1]).get();
+        return flights;
     }
     
     @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(airportId);
+        out.writeInt(flights);
+    }
+
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        airportId = in.readInt();
+        flights = in.readInt();
+    }
+
+    @Override
     public int hashCode() {
-        return (getAirportId() << 6) + getFlights();
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + airportId;
+        result = prime * result + flights;
+        return result;
     }
     
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
+        if (this == obj)
             return true;
-        }
-        if (obj == null) {
+        if (obj == null)
             return false;
-        }
-        if (!(obj instanceof AirportFlightsWritable)) {
+        if (getClass() != obj.getClass())
             return false;
-        }
-        AirportFlightsWritable w = (AirportFlightsWritable) obj;
-        if (getAirportId() != w.getAirportId()) {
+        AirportFlightsWritable other = (AirportFlightsWritable) obj;
+        if (airportId != other.airportId)
             return false;
-        }
-        if (getFlights() != w.getFlights()) {
+        if (flights != other.flights)
             return false;
-        }
         return true;
     }
     
     @Override
     public String toString() {
-        return String.format("[AirportFlights %d, %d]", getAirportId(), getFlights());
+        return String.format("[AirportFlights %d, %d]", airportId, flights);
     }
 }
