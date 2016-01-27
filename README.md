@@ -27,7 +27,7 @@ _Group 2 (Answer any 3):_
 
 _Group 3 (Answer both using only Hadoop and Spark):_
 
-*Does the popularity distribution of airports follow a Zipf distribution? If not, what distribution does it follow?
+* Does the popularity distribution of airports follow a Zipf distribution? If not, what distribution does it follow?
 
 * Tom wants to travel from airport X to airport Z. However, Tom also wants to stop at airport Y for some sightseeing on the way. More concretely, Tom has the following requirements:
 The second leg of the journey (flight Y-Z) must depart two days after the first leg (flight X-Y). For example, if X-Y departs January 5, 2008, Y-Z must depart January 7, 2008.
