@@ -1,6 +1,7 @@
 package com.coyotesong.coursera.cloud.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.Id;
 
 /**
  * Static lookup information on unique carriers, from L_UNIQUE_CARRIERS_ID.csv
@@ -12,6 +13,7 @@ public class LookupUniqueCarrier {
     private String code;
     private String description;
 
+    @Id
     public String getCode() {
         return code;
     }

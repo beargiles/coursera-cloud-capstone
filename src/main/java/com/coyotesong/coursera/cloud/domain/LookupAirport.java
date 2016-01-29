@@ -1,6 +1,7 @@
 package com.coyotesong.coursera.cloud.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.Id;
 
 /**
  * Static lookup information about airports, from L_AIRPORT_ID.csv
@@ -23,6 +24,7 @@ public class LookupAirport {
         this.location = location;
     }
 
+    @Id
     public Integer getCode() {
         return code;
     }

@@ -1,6 +1,7 @@
 package com.coyotesong.coursera.cloud.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.Id;
 
 /**
  * Lookup static information about airport with sequence info, from
@@ -14,6 +15,7 @@ public class LookupAirportSeq {
     private String name;
     private String location;
 
+    @Id
     public String getCode() {
         return code;
     }

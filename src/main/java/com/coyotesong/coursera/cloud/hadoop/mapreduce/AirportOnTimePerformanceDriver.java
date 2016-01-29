@@ -293,7 +293,7 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
                 for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
                     String id = record.get(0);
                     if (id.matches("[0-9]+")) {
-                        AirlineInfo info = new AirlineInfo(Integer.valueOf(id), record.get(3));
+                        AirlineInfo info = AirlineInfo.CSV.parse(record);
                         air.put(info.getAirlineId(), info);
                     }
                 }
@@ -306,7 +306,7 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
                 final int airlineId = delay.getAirlineId();
                 if (air.containsKey(airlineId)) {
                     context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f %s",
-                            delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), air.get(airlineId).getName())));
+                            delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), air.get(airlineId).getCarrierName())));
                 } else {
                     context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f (unknown: %d)",
                             delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), airlineId)));

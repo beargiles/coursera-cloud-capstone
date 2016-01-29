@@ -13,6 +13,9 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.junit.Test;
 
+import com.coyotesong.coursera.cloud.domain.AirlineInfo;
+import com.coyotesong.coursera.cloud.domain.AirportInfo;
+
 /**
  * Simple unit test that verifies we can read the local test data.
  * 
@@ -22,37 +25,40 @@ public class AirportAndCarrierTest {
 
     @Test
     public void testAirports() throws Exception {
-        Map<Integer, String> map = new HashMap<>();
+        Map<Integer, AirportInfo> map = new HashMap<>();
         try (InputStream is = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream("485012853_T_MASTER_CORD.csv"); Reader r = new InputStreamReader(is)) {
             for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
-                String id = record.get(1);
+                String id = record.get(0);
                 if (id.matches("[0-9]+")) {
-                    map.put(Integer.valueOf(id), record.get(3));
+                    AirportInfo airport = AirportInfo.CSV.parse(record);
+                    map.put(airport.getId(), airport);
                 }
             }
         }
 
-        assertEquals(6358, map.size());
-        assertTrue(map.containsKey(16385));
-        assertEquals("Ad-Dabbah Airport", map.get(16385));
+        assertEquals(13137, map.size());
+        System.out.println(map.keySet().iterator().next());
+        assertTrue(map.containsKey(1245201));
+        assertEquals("Boston City Heliport", map.get(1245201).getDisplayAirportName());
     }
 
     @Test
-    public void testCouriers() throws Exception {
-        Map<Integer, String> map = new HashMap<>();
+    public void testCarriers() throws Exception {
+        Map<Integer, AirlineInfo> map = new HashMap<>();
         try (InputStream is = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream("485012853_T_CARRIER_DECODE.csv"); Reader r = new InputStreamReader(is)) {
             for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
                 String id = record.get(0);
                 if (id.matches("[0-9]+")) {
-                    map.put(Integer.valueOf(id), record.get(3));
+                    AirlineInfo airline = AirlineInfo.CSV.parse(record);
+                    map.put(airline.getAirlineId(), airline);
                 }
             }
         }
 
         assertEquals(1607, map.size());
         assertTrue(map.containsKey(20500));
-        assertEquals("GoJet Airlines LLC d/b/a United Express", map.get(20500));
+        assertEquals("GoJet Airlines LLC d/b/a United Express", map.get(20500).getCarrierName());
     }
 }

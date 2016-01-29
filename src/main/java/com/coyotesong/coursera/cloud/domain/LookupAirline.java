@@ -1,6 +1,7 @@
 package com.coyotesong.coursera.cloud.domain;
 
 import javax.persistence.Entity;
+import javax.persistence.Id;
 
 /**
  * Static lookup information about airlines, from L_AIRLINE_ID.csv
@@ -23,6 +24,7 @@ public class LookupAirline {
         this.abbreviation = abbreviation;
     }
 
+    @Id
     public Integer getCode() {
         return code;
     }
