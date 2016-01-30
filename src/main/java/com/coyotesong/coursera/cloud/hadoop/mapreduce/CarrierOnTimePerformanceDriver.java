@@ -25,7 +25,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
-import com.coyotesong.coursera.cloud.domain.OntimeInfo;
+import com.coyotesong.coursera.cloud.domain.FlightInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
 import com.coyotesong.coursera.cloud.util.CSVParser;
@@ -91,7 +91,7 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
      * Set up second job - it reads file containing airline ID and arrival
      * statistics and performs the final comparisons.
      */
-    public Job setupSecondJob(Path input, Path output) throws IOException {
+    public Job setupSecondJob(Path input, Path output, URI ritaStatic) throws IOException {
         Job job = Job.getInstance(this.getConf(), "Top Airlines");
         job.setOutputKeyClass(DoubleWritable.class);
         job.setOutputValueClass(Text.class);
@@ -111,14 +111,7 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
 
         job.setJarByClass(CarrierOnTimePerformanceDriver.class);
 
-        // we could pass this through from command line
-        try {
-            job.setCacheFiles(new URI[] {
-                    Thread.currentThread().getContextClassLoader().getResource("rita-static.zip").toURI() });
-        } catch (URISyntaxException e) {
-            // should never happen
-            throw new AssertionError(e);
-        }
+        job.addCacheFile(ritaStatic);
 
         return job;
     }
@@ -136,7 +129,17 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
             return 0;
         }
 
-        final Job jobB = setupSecondJob(new Path(args[2]), new Path(args[1]));
+        // we could pass this through from command line
+        URI ritaStatic = null;
+        try {
+            ritaStatic =
+                    Thread.currentThread().getContextClassLoader().getResource("rita-static.zip").toURI();
+        } catch (URISyntaxException e) {
+            // should never happen
+            throw new AssertionError(e);
+        }
+
+        final Job jobB = setupSecondJob(new Path(args[2]), new Path(args[1]), ritaStatic);
         return jobB.waitForCompletion(true) ? 1 : 0;
     }
 
@@ -154,7 +157,7 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
             final List<String> values = CSVParser.parse(value.toString());
 
             if (values.get(0).matches("[0-9]+")) {
-                OntimeInfo info = OntimeInfo.Builder.build(values);
+                FlightInfo info = FlightInfo.Builder.build(values);
 
                 // do not consider cancelled or diverted flights.
                 if (!info.isCancelled() && !info.isDiverted()) {

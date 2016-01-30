@@ -14,13 +14,13 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 
 import com.coyotesong.coursera.cloud.domain.CarrierInfo;
-import com.coyotesong.coursera.cloud.domain.OntimeInfo;
+import com.coyotesong.coursera.cloud.domain.FlightInfo;
 import com.coyotesong.coursera.cloud.domain.AirportInfo;
 import com.coyotesong.coursera.cloud.repository.CarrierInfoRepository;
 import com.coyotesong.coursera.cloud.repository.AirportInfoRepository;
 import com.coyotesong.coursera.cloud.repository.LookupAirlineRepository;
 import com.coyotesong.coursera.cloud.repository.LookupAirportRepository;
-import com.coyotesong.coursera.cloud.repository.OntimeInfoRepository;
+import com.coyotesong.coursera.cloud.repository.FlightInfoRepository;
 import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
@@ -44,7 +44,7 @@ public class InitializeStaticDatabaseApplication {
     private CarrierInfoRepository carrierInfoRepository;
     
     @Autowired
-    private OntimeInfoRepository ontimeInfoRepository;
+    private FlightInfoRepository flightInfoRepository;
     
     @Autowired
     private LookupAirlineRepository lookupAirlineRepository;
@@ -99,8 +99,8 @@ public class InitializeStaticDatabaseApplication {
             for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
                 String id = record.get(0);
                 if (id.matches("[0-9]+")) {
-                    OntimeInfo info = OntimeInfo.CSV.parse(record);
-                    ontimeInfoRepository.save(info);
+                    FlightInfo info = FlightInfo.CSV.parse(record);
+                    flightInfoRepository.save(info);
                 }
             }
         }

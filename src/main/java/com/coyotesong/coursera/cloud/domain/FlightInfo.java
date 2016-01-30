@@ -20,7 +20,7 @@ import org.apache.commons.csv.CSVRecord;
  * @author bgiles
  */
 @Entity
-public class OntimeInfo {
+public class FlightInfo {
     private Long id;
     private Integer year;
     private Integer month;
@@ -43,7 +43,7 @@ public class OntimeInfo {
     private boolean isCancelled;
     private boolean isDiverted;
 
-    public OntimeInfo() {
+    public FlightInfo() {
 
     }
 
@@ -224,7 +224,7 @@ public class OntimeInfo {
      * @author bgiles
      */
     public static class Builder {
-        private OntimeInfo info = new OntimeInfo();
+        private FlightInfo info = new FlightInfo();
 
         public void setId(Long id) {
             info.id = id;
@@ -310,11 +310,11 @@ public class OntimeInfo {
             info.isDiverted = isDiverted;
         }
         
-        public OntimeInfo build() {
+        public FlightInfo build() {
             return info;
         }
 
-        public static OntimeInfo build(List<String> values) {
+        public static FlightInfo build(List<String> values) {
             final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
             final Builder builder = new Builder();
             
@@ -359,7 +359,7 @@ public class OntimeInfo {
      * @author bgiles
      */
     public static class CSV {
-        public static OntimeInfo parse(CSVRecord record) {
+        public static FlightInfo parse(CSVRecord record) {
             final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
             final Builder builder = new Builder();
             

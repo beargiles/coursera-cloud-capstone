@@ -23,8 +23,8 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.coyotesong.coursera.cloud.configuration.DefaultConfig;
 import com.coyotesong.coursera.cloud.configuration.RepositoryConfiguration;
-import com.coyotesong.coursera.cloud.domain.OntimeInfo;
-import com.coyotesong.coursera.cloud.repository.OntimeInfoRepository;
+import com.coyotesong.coursera.cloud.domain.FlightInfo;
+import com.coyotesong.coursera.cloud.repository.FlightInfoRepository;
 import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
@@ -39,7 +39,7 @@ import com.coyotesong.coursera.cloud.util.LookupUtil;
 public class CarrierOnTimePerformanceDriverDeepTest {
 
     @Autowired
-    private OntimeInfoRepository ontimeInfoRepository;
+    private FlightInfoRepository flightInfoRepository;
 
     static {
         System.setProperty("hadoop.home.dir", "/opt/hadoop");
@@ -57,8 +57,8 @@ public class CarrierOnTimePerformanceDriverDeepTest {
             for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
                 String id = record.get(0);
                 if (id.matches("[0-9]+")) {
-                    OntimeInfo info = OntimeInfo.CSV.parse(record);
-                    ontimeInfoRepository.save(info);
+                    FlightInfo info = FlightInfo.CSV.parse(record);
+                    flightInfoRepository.save(info);
                 }
             }
         }

@@ -32,7 +32,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
 import com.coyotesong.coursera.cloud.domain.CarrierInfo;
-import com.coyotesong.coursera.cloud.domain.OntimeInfo;
+import com.coyotesong.coursera.cloud.domain.FlightInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineGroupingComparator;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineSortingComparator;
@@ -147,7 +147,7 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
 
             // skip first line
             if (values.get(0).matches("[0-9]+")) {
-                final OntimeInfo flight = OntimeInfo.Builder.build(values);
+                final FlightInfo flight = FlightInfo.Builder.build(values);
                 if (!flight.isCancelled() && !flight.isDiverted()) {
                     final AirportsAndAirlineWritable outKey = new AirportsAndAirlineWritable(
                             flight.getOriginAirportId(), flight.getDestAirportId(), flight.getAirlineId());

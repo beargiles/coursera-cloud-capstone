@@ -32,10 +32,10 @@ import com.coyotesong.coursera.cloud.configuration.DefaultConfig;
 import com.coyotesong.coursera.cloud.configuration.RepositoryConfiguration;
 import com.coyotesong.coursera.cloud.domain.AirportInfo;
 import com.coyotesong.coursera.cloud.domain.LookupAirport;
-import com.coyotesong.coursera.cloud.domain.OntimeInfo;
+import com.coyotesong.coursera.cloud.domain.FlightInfo;
 import com.coyotesong.coursera.cloud.repository.AirportInfoRepository;
 import com.coyotesong.coursera.cloud.repository.LookupAirportRepository;
-import com.coyotesong.coursera.cloud.repository.OntimeInfoRepository;
+import com.coyotesong.coursera.cloud.repository.FlightInfoRepository;
 import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
@@ -55,7 +55,7 @@ public class PopularAirportsDriverDeepTest {
     private AirportInfoRepository airportInfoRepository;
 
     @Autowired
-    private OntimeInfoRepository ontimeInfoRepository;
+    private FlightInfoRepository flightInfoRepository;
     
     @Autowired
     private LookupAirportRepository lookupAirportRepository;
@@ -94,8 +94,8 @@ public class PopularAirportsDriverDeepTest {
             for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
                 String id = record.get(0);
                 if (id.matches("[0-9]+")) {
-                    OntimeInfo info = OntimeInfo.CSV.parse(record);
-                    ontimeInfoRepository.save(info);
+                    FlightInfo info = FlightInfo.CSV.parse(record);
+                    flightInfoRepository.save(info);
                 }
             }
         }
@@ -116,7 +116,7 @@ public class PopularAirportsDriverDeepTest {
                 assertEquals(2, values.length);
                 assertTrue(values[0].matches("[0-9]+"));
                 assertTrue(values[1].matches("[0-9]+"));
-                long count = ontimeInfoRepository.countByDestAirportId(Integer.parseInt(values[0]));
+                long count = flightInfoRepository.countByDestAirportId(Integer.parseInt(values[0]));
                 assertEquals(count, Integer.parseInt(values[1]));
             }
         }  
@@ -135,7 +135,7 @@ public class PopularAirportsDriverDeepTest {
             String line = null;
             
             // find 10 most popular airports and then reverse the order.
-            List<Integer> ids = ontimeInfoRepository.listPopularDestAirportIds();
+            List<Integer> ids = flightInfoRepository.listPopularDestAirportIds();
             ids = ids.subList(0, Math.min(10,ids.size()));
             Collections.reverse(ids);
 

@@ -23,7 +23,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
-import com.coyotesong.coursera.cloud.domain.OntimeInfo;
+import com.coyotesong.coursera.cloud.domain.FlightInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportFlightsWritable;
 import com.coyotesong.coursera.cloud.util.CSVParser;
 import com.coyotesong.coursera.cloud.util.LookupUtil;
@@ -133,7 +133,7 @@ public class PopularAirportsDriver extends Configured implements Tool {
             // skip first line
             final List<String> values = CSVParser.parse(value.toString());
             if (values.get(0).matches("[0-9]+")) {
-                final OntimeInfo info = OntimeInfo.Builder.build(values);
+                final FlightInfo info = FlightInfo.Builder.build(values);
 
                 if (!info.isCancelled() && !info.isDiverted()) {
                     context.write(new IntWritable(info.getDestAirportId()), ONE);
