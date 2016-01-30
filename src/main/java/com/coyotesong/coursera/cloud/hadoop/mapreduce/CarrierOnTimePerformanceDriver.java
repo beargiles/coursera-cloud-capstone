@@ -3,6 +3,7 @@ package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
@@ -24,6 +25,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
+import com.coyotesong.coursera.cloud.domain.OntimeInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
 import com.coyotesong.coursera.cloud.util.CSVParser;
@@ -109,6 +111,15 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
 
         job.setJarByClass(CarrierOnTimePerformanceDriver.class);
 
+        // we could pass this through from command line
+        try {
+            job.setCacheFiles(new URI[] {
+                    Thread.currentThread().getContextClassLoader().getResource("rita-static.zip").toURI() });
+        } catch (URISyntaxException e) {
+            // should never happen
+            throw new AssertionError(e);
+        }
+
         return job;
     }
 
@@ -135,15 +146,6 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
      */
     public static class GatherArrivalDelayMap
             extends Mapper<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> {
-        private int airlineIdx = 5;
-        private int arrDelayIdx = 17;
-        private int cancelledIdx = 18;
-        private int divertedIdx = 19;
-
-        @Override
-        protected void setup(Mapper<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable>.Context context) {
-            // TODO: retrieve indexes
-        }
 
         @Override
         protected void map(LongWritable key, Text value,
@@ -151,24 +153,14 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
                         throws IOException, InterruptedException {
             final List<String> values = CSVParser.parse(value.toString());
 
-            // do not consider cancelled or diverted flights.
-            final boolean cancelled = !"0.00".equals(values.get(cancelledIdx));
-            final boolean diverted = !"0.00".equals(values.get(divertedIdx));
-            if (cancelled || diverted) {
-                return;
-            }
+            if (values.get(0).matches("[0-9]+")) {
+                OntimeInfo info = OntimeInfo.Builder.build(values);
 
-            // get airlineID and arrival delay.
-            final String airlineIdStr = values.get(airlineIdx);
-            String arrDelayStr = values.get(arrDelayIdx);
-            final int idx = arrDelayStr.indexOf('.');
-            if (idx > 0) {
-                arrDelayStr = arrDelayStr.substring(0, idx);
-            }
-            if (airlineIdStr.matches("[0-9]+") && arrDelayStr.matches("-?[0-9]+")) {
-                final int airlineId = Integer.parseInt(airlineIdStr);
-                final int delay = Integer.parseInt(arrDelayStr);
-                context.write(new IntWritable(airlineId), new AirlineFlightDelaysWritable(airlineId, delay));
+                // do not consider cancelled or diverted flights.
+                if (!info.isCancelled() && !info.isDiverted()) {
+                    context.write(new IntWritable(info.getAirlineId()),
+                            new AirlineFlightDelaysWritable(info.getAirlineId(), info.getArrivalDelay().intValue()));
+                }
             }
         }
     }
@@ -225,7 +217,7 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
             this.n = conf.getInt("N", 10);
 
             // load AIRLINES lookup table.
-            for (URI uri : context.getCacheArchives()) {
+            for (URI uri : context.getCacheFiles()) {
                 if ("file".equals(uri.getScheme())) {
                     if (uri.getPath().endsWith("rita-static.zip")) {
                         LookupUtil.load(new File(uri.getPath()));
@@ -264,7 +256,7 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
             }
 
             airlines.add(w);
-            while (airlines.size() > 25) {
+            while (airlines.size() > n) {
                 airlines.remove(airlines.last());
             }
         }

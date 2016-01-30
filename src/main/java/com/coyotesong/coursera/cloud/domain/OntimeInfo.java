@@ -37,9 +37,9 @@ public class OntimeInfo {
     private Integer destAirportSeqId;
     private Integer destCityMarketId;
     private String crsDepartureTime;
-    private Float DepartureDelay;
+    private Long departureDelay;
     private String crsArrivalTime;
-    private Float ArrivalDelay;
+    private Long arrivalDelay;
     private boolean isCancelled;
     private boolean isDiverted;
 
@@ -178,12 +178,12 @@ public class OntimeInfo {
         this.crsDepartureTime = crsDepartureTime;
     }
 
-    public Float getDepartureDelay() {
-        return DepartureDelay;
+    public Long getDepartureDelay() {
+        return departureDelay;
     }
 
-    public void setDepartureDelay(Float DepartureDelay) {
-        this.DepartureDelay = DepartureDelay;
+    public void setDepartureDelay(Long departureDelay) {
+        this.departureDelay = departureDelay;
     }
 
     public String getCrsArrivalTime() {
@@ -194,12 +194,12 @@ public class OntimeInfo {
         this.crsArrivalTime = crsArrivalTime;
     }
 
-    public Float getArrivalDelay() {
-        return ArrivalDelay;
+    public Long getArrivalDelay() {
+        return arrivalDelay;
     }
 
-    public void setArrivalDelay(Float ArrivalDelay) {
-        this.ArrivalDelay = ArrivalDelay;
+    public void setArrivalDelay(Long arrivalDelay) {
+        this.arrivalDelay = arrivalDelay;
     }
 
     public boolean isCancelled() {
@@ -290,16 +290,16 @@ public class OntimeInfo {
             info.crsDepartureTime = crsDepartureTime;
         }
 
-        public void setDepartureDelay(Float DepartureDelay) {
-            info.DepartureDelay = DepartureDelay;
+        public void setDepartureDelay(Long departureDelay) {
+            info.departureDelay = departureDelay;
         }
 
         public void setCrsArrivalTime(String crsArrivalTime) {
             info.crsArrivalTime = crsArrivalTime;
         }
 
-        public void setArrivalDelay(Float ArrivalDelay) {
-            info.ArrivalDelay = ArrivalDelay;
+        public void setArrivalDelay(Long arrivalDelay) {
+            info.arrivalDelay = arrivalDelay;
         }
 
         public void setCancelled(boolean isCancelled) {
@@ -338,13 +338,13 @@ public class OntimeInfo {
             builder.setDestCityMarketId(Integer.parseInt(values.get(13)));
             builder.setCrsDepartureTime(values.get(14));
             if (!values.get(15).isEmpty()) {
-                builder.setDepartureDelay(Float.parseFloat(values.get(15)));
+                builder.setDepartureDelay(Float.valueOf(values.get(15)).longValue());
             }
             if (!values.get(16).isEmpty()) {
                 builder.setCrsArrivalTime(values.get(16));
             }
             if (!values.get(17).isEmpty()) {
-                builder.setArrivalDelay(Float.parseFloat(values.get(17)));
+                builder.setArrivalDelay(Float.valueOf(values.get(17)).longValue());
             }
             builder.setCancelled(!"0.00".equals(values.get(18)));
             builder.setDiverted(!"0.00".equals(values.get(19)));
@@ -383,13 +383,13 @@ public class OntimeInfo {
             builder.setDestCityMarketId(Integer.parseInt(record.get(13)));
             builder.setCrsDepartureTime(record.get(14));
             if (!record.get(15).isEmpty()) {
-                builder.setDepartureDelay(Float.parseFloat(record.get(15)));
+                builder.setDepartureDelay(Float.valueOf(record.get(15)).longValue());
             }
             if (!record.get(16).isEmpty()) {
                 builder.setCrsArrivalTime(record.get(16));
             }
             if (!record.get(17).isEmpty()) {
-                builder.setArrivalDelay(Float.parseFloat(record.get(17)));
+                builder.setArrivalDelay(Float.valueOf(record.get(17)).longValue());
             }
             builder.setCancelled(!"0.00".equals(record.get(18)));
             builder.setDiverted(!"0.00".equals(record.get(19)));
