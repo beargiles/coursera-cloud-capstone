@@ -49,57 +49,13 @@ import com.coyotesong.coursera.cloud.util.LookupUtil;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = { DefaultConfig.class,
         RepositoryConfiguration.class }, loader = SpringApplicationContextLoader.class)
-public class PopularAirportsDriverDeepTest {
-
-    @Autowired
-    private AirportInfoRepository airportInfoRepository;
+public class PopularAirportsDriverDeepTest extends AbstractDriverDeepTest {
 
     @Autowired
     private FlightInfoRepository flightInfoRepository;
     
     @Autowired
     private LookupAirportRepository lookupAirportRepository;
-
-    static {
-        System.setProperty("hadoop.home.dir", "/opt/hadoop");
-        try {
-            // System.setOut(new PrintStream(new
-            // FileOutputStream("/tmp/count.out")));
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
-
-    /**
-     * Load airport information.
-     * 
-     * @throws Exception
-     */
-    public void loadAirports(String filename) throws Exception {
-        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
-                Reader r = new InputStreamReader(is)) {
-            for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
-                String id = record.get(0);
-                if (id.matches("[0-9]+")) {
-                    AirportInfo airport = AirportInfo.CSV.parse(record);
-                    airportInfoRepository.save(airport);
-                }
-            }
-        }
-    }
-
-    public void loadOntime(String filename) throws Exception {
-        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
-                Reader r = new InputStreamReader(is)) {
-            for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
-                String id = record.get(0);
-                if (id.matches("[0-9]+")) {
-                    FlightInfo info = FlightInfo.CSV.parse(record);
-                    flightInfoRepository.save(info);
-                }
-            }
-        }
-    }
 
     /**
      * Check results of first job.
@@ -148,23 +104,6 @@ public class PopularAirportsDriverDeepTest {
                 assertEquals(airport.getName(), values[1]);
             }
         }  
-    }
-
-    /**
-     * Load database so we can compare traditional and MR approach.
-     * 
-     * @param filename
-     * @throws Exception
-     */
-    public void loadDatabase(String filename) throws Exception {
-        // load data conventionally so we can check results later.
-        URL url = Thread.currentThread().getContextClassLoader().getResource("rita-static.zip");
-        File file = new File(url.getFile());
-
-        LookupUtil.load(file);
-        lookupAirportRepository.save(LookupUtil.AIRPORTS.values());
-        loadAirports("485012853_T_MASTER_CORD.csv");
-        loadOntime(filename); 
     }
  
     /**

@@ -36,49 +36,11 @@ import com.coyotesong.coursera.cloud.util.LookupUtil;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = { DefaultConfig.class,
         RepositoryConfiguration.class }, loader = SpringApplicationContextLoader.class)
-public class AirportOnTimePerformanceDriverDeepTest {
+public class AirportOnTimePerformanceDriverDeepTest extends AbstractDriverDeepTest {
 
     @Autowired
     private FlightInfoRepository flightInfoRepository;
-
-    static {
-        System.setProperty("hadoop.home.dir", "/opt/hadoop");
-        try {
-            // System.setOut(new PrintStream(new
-            // FileOutputStream("/tmp/count.out")));
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
-
-    public void loadOntime(String filename) throws Exception {
-        try (InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream(filename);
-                Reader r = new InputStreamReader(is)) {
-            for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
-                String id = record.get(0);
-                if (id.matches("[0-9]+")) {
-                    FlightInfo info = FlightInfo.CSV.parse(record);
-                    flightInfoRepository.save(info);
-                }
-            }
-        }
-    }
-
-    /**
-     * Load database so we can compare traditional and MR approach.
-     * 
-     * @param filename
-     * @throws Exception
-     */
-    public void loadDatabase(String filename) throws Exception {
-        // load data conventionally so we can check results later.
-        URL url = Thread.currentThread().getContextClassLoader().getResource("rita-static.zip");
-        File file = new File(url.getFile());
-
-        LookupUtil.load(file);
-        loadOntime(filename);
-    }
-
+ 
     @Test
     //@Ignore
     public void test() throws Exception {
