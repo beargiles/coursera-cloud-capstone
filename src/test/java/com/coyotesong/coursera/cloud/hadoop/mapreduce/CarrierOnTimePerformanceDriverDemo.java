@@ -27,7 +27,7 @@ import static org.junit.Assert.assertTrue;
  * 
  * @author bgiles
  */
-public class AirlineOnTimePerformanceDriverDemo {
+public class CarrierOnTimePerformanceDriverDemo {
     static {
         System.setProperty("hadoop.home.dir", "/opt/hadoop");
         try {
@@ -44,7 +44,7 @@ public class AirlineOnTimePerformanceDriverDemo {
         final File ROOT = new File("/media/router/Documents/Coursera Cloud");
         final File ONTIME_FILE = new File(ROOT, "360692348_T_ONTIME.csv");
 
-        final AirlineOnTimePerformanceDriver driver = new AirlineOnTimePerformanceDriver();
+        final CarrierOnTimePerformanceDriver driver = new CarrierOnTimePerformanceDriver();
         driver.setConf(new Configuration());
 
         final File tempdir = Files.createTempDirectory("airline_ontime_").toFile();

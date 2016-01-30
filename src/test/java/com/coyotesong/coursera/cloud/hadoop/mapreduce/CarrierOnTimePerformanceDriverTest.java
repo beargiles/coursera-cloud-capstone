@@ -22,7 +22,7 @@ import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
  * 
  * @author bgiles
  */
-public class AirlineOnTimePerformanceDriverTest {
+public class CarrierOnTimePerformanceDriverTest {
     static {
         System.setProperty("hadoop.home.dir", "/opt/hadoop");
         try {
@@ -40,7 +40,7 @@ public class AirlineOnTimePerformanceDriverTest {
     @Test
     public void testArrivalDelayMap() throws IOException {
         final MapDriver<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> driver = new MapDriver<>();
-        driver.withMapper(new AirlineOnTimePerformanceDriver.GatherArrivalDelayMap());
+        driver.withMapper(new CarrierOnTimePerformanceDriver.GatherArrivalDelayMap());
         driver.withInput(new LongWritable(0), new Text(
                 "2015,1,1,4,2015-01-01,19805,\"N787AA\",\"1\",12478,1247802,31703,12892,1289203,32575,\"0900\",-5.00,\"1230\",7.00,0.00,0.00,"));
         driver.withInput(new LongWritable(1), new Text(
@@ -56,7 +56,7 @@ public class AirlineOnTimePerformanceDriverTest {
     @Test
     public void testArrivalDelayMapCancelledFlight() throws IOException {
         final MapDriver<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> driver = new MapDriver<>();
-        driver.withMapper(new AirlineOnTimePerformanceDriver.GatherArrivalDelayMap());
+        driver.withMapper(new CarrierOnTimePerformanceDriver.GatherArrivalDelayMap());
         driver.withInput(new LongWritable(0), new Text(
                 "2015,1,1,4,2015-01-01,19805,\"N787AA\",\"1\",12478,1247802,31703,12892,1289203,32575,\"0900\",-5.00,\"1230\",7.00,1.00,0.00,"));
         driver.runTest();
@@ -68,7 +68,7 @@ public class AirlineOnTimePerformanceDriverTest {
     @Test
     public void testArrivalDelayMapDivertedFlight() throws IOException {
         final MapDriver<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable> driver = new MapDriver<>();
-        driver.withMapper(new AirlineOnTimePerformanceDriver.GatherArrivalDelayMap());
+        driver.withMapper(new CarrierOnTimePerformanceDriver.GatherArrivalDelayMap());
         driver.withInput(new LongWritable(0), new Text(
                 "2015,1,1,4,2015-01-01,19805,\"N787AA\",\"1\",12478,1247802,31703,12892,1289203,32575,\"0900\",-5.00,\"1230\",7.00,0.00,1.00,"));
         driver.runTest();
@@ -81,7 +81,7 @@ public class AirlineOnTimePerformanceDriverTest {
     @Test
     public void testArrivalDelayReduce() throws IOException {
         final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, IntWritable, AirlineFlightDelaysWritable> driver = new ReduceDriver<>();
-        driver.withReducer(new AirlineOnTimePerformanceDriver.GatherArrivalDelayReduce());
+        driver.withReducer(new CarrierOnTimePerformanceDriver.GatherArrivalDelayReduce());
         driver.withInput(new IntWritable(19805),
                 Arrays.asList(new AirlineFlightDelaysWritable(19805, 7), new AirlineFlightDelaysWritable(19805, -19)));
         driver.withOutput(new IntWritable(19805), new AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 }));
@@ -93,8 +93,8 @@ public class AirlineOnTimePerformanceDriverTest {
      */
     @Test
     public void testGatherArrivalDelayMapReduce() throws IOException {
-        final AirlineOnTimePerformanceDriver.GatherArrivalDelayMap mapper = new AirlineOnTimePerformanceDriver.GatherArrivalDelayMap();
-        final AirlineOnTimePerformanceDriver.GatherArrivalDelayReduce reducer = new AirlineOnTimePerformanceDriver.GatherArrivalDelayReduce();
+        final CarrierOnTimePerformanceDriver.GatherArrivalDelayMap mapper = new CarrierOnTimePerformanceDriver.GatherArrivalDelayMap();
+        final CarrierOnTimePerformanceDriver.GatherArrivalDelayReduce reducer = new CarrierOnTimePerformanceDriver.GatherArrivalDelayReduce();
         final MapReduceDriver<LongWritable, Text, IntWritable, AirlineFlightDelaysWritable, IntWritable, AirlineFlightDelaysWritable> driver = new MapReduceDriver<>(
                 mapper, reducer);
         driver.withInput(new LongWritable(0), new Text(
@@ -113,7 +113,7 @@ public class AirlineOnTimePerformanceDriverTest {
     @Test
     public void testCompareArrivalDelayMap() throws IOException {
         final MapDriver<Text, Text, IntWritable, AirlineFlightDelaysWritable> driver = new MapDriver<>();
-        driver.withMapper(new AirlineOnTimePerformanceDriver.CompareArrivalDelayMap());
+        driver.withMapper(new CarrierOnTimePerformanceDriver.CompareArrivalDelayMap());
         driver.withInput(new Text("19805"), new Text("2,-12,410,7"));
         driver.withOutput(new IntWritable(19805), new AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 }));
         driver.runTest();
@@ -129,7 +129,7 @@ public class AirlineOnTimePerformanceDriverTest {
         final URI uri = this.getClass().getClassLoader().getResource("rita-static.zip").toURI();
         driver.setCacheArchives(new URI[] { uri });
 
-        driver.withReducer(new AirlineOnTimePerformanceDriver.CompareArrivalDelayReduce());
+        driver.withReducer(new CarrierOnTimePerformanceDriver.CompareArrivalDelayReduce());
         driver.withInput(new IntWritable(19805),
                 Arrays.asList(new AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 })));
         driver.withOutput(NullWritable.get(), new Text(" 30.770 -6.000 American Airlines Inc."));
@@ -143,8 +143,8 @@ public class AirlineOnTimePerformanceDriverTest {
      */
     @Test
     public void testCompareArrivalDelayMapReduce() throws IOException, URISyntaxException {
-        final AirlineOnTimePerformanceDriver.CompareArrivalDelayMap mapper = new AirlineOnTimePerformanceDriver.CompareArrivalDelayMap();
-        final AirlineOnTimePerformanceDriver.CompareArrivalDelayReduce reducer = new AirlineOnTimePerformanceDriver.CompareArrivalDelayReduce();
+        final CarrierOnTimePerformanceDriver.CompareArrivalDelayMap mapper = new CarrierOnTimePerformanceDriver.CompareArrivalDelayMap();
+        final CarrierOnTimePerformanceDriver.CompareArrivalDelayReduce reducer = new CarrierOnTimePerformanceDriver.CompareArrivalDelayReduce();
         final MapReduceDriver<Text, Text, IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new MapReduceDriver<>(
                 mapper, reducer);
         final URI uri = this.getClass().getClassLoader().getResource("rita-static.zip").toURI();

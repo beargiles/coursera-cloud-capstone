@@ -53,7 +53,7 @@ import com.coyotesong.coursera.cloud.util.LookupUtil;
  *
  * @author bgiles
  */
-public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
+public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
 
     /**
      * Set up first job - it reads input files and creates a file containing the
@@ -80,7 +80,7 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
 
         job.setOutputFormatClass(AirlineFlightDelaysOutputFormat.class);
 
-        job.setJarByClass(AirlineOnTimePerformanceDriver.class);
+        job.setJarByClass(CarrierOnTimePerformanceDriver.class);
 
         return job;
     }
@@ -107,7 +107,7 @@ public class AirlineOnTimePerformanceDriver extends Configured implements Tool {
         job.setInputFormatClass(KeyValueTextInputFormat.class);
         job.setOutputFormatClass(TextOutputFormat.class);
 
-        job.setJarByClass(AirlineOnTimePerformanceDriver.class);
+        job.setJarByClass(CarrierOnTimePerformanceDriver.class);
 
         return job;
     }

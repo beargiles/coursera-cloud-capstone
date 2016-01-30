@@ -142,7 +142,7 @@ public class AirportOnTimePerformanceDriverTest {
     @Test
     @Ignore
     public void demonstrate() throws Exception {
-        final AirlineOnTimePerformanceDriver driver = new AirlineOnTimePerformanceDriver();
+        final CarrierOnTimePerformanceDriver driver = new CarrierOnTimePerformanceDriver();
         driver.setConf(new Configuration());
 
         final File tempdir = Files.createTempDirectory("airlineOntime_").toFile();
