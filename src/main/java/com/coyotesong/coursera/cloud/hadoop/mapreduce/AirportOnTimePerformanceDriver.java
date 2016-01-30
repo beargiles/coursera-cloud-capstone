@@ -1,9 +1,7 @@
 package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.net.URI;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -11,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
@@ -31,13 +27,12 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
-import com.coyotesong.coursera.cloud.domain.CarrierInfo;
+import com.coyotesong.coursera.cloud.domain.AirlineFlightDelays;
 import com.coyotesong.coursera.cloud.domain.FlightInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineGroupingComparator;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineSortingComparator;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineWritable;
-import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
 import com.coyotesong.coursera.cloud.util.CSVParser;
 import com.coyotesong.coursera.cloud.util.LookupUtil;
 
@@ -176,7 +171,7 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
             final Map<AirportsAndAirlineWritable, AirlineFlightDelaysWritable> airlines = new HashMap<>();
             for (AirlineFlightDelaysWritable value : values) {
                 final AirportsAndAirlineWritable k = new AirportsAndAirlineWritable(key.getOriginId(), key.getDestinationId(),
-                        value.getAirlineId());
+                        value.getAirlineFlightDelays().getAirlineId());
                 if (!airlines.containsKey(k)) {
                     airlines.put(k, new AirlineFlightDelaysWritable(key.getAirlineId()));
                 }
@@ -261,7 +256,7 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
                 public Comparator<AirlineFlightDelaysWritable> comparator() {
                     return new Comparator<AirlineFlightDelaysWritable>() {
                         public int compare(AirlineFlightDelaysWritable x, AirlineFlightDelaysWritable y) {
-                            return x.getNumFlights() - y.getNumFlights();
+                            return x.getAirlineFlightDelays().getNumFlights() - y.getAirlineFlightDelays().getNumFlights();
                         }
                     };
                 }
@@ -310,7 +305,8 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
             // we now sort airlines by on-time arrival statistics
             final TreeSet<AirlineFlightDelaysWritable> delays = new TreeSet<>(airlines);
 
-            for (AirlineFlightDelaysWritable delay : delays) {
+            for (AirlineFlightDelaysWritable dw : delays) {
+                final AirlineFlightDelays delay = dw.getAirlineFlightDelays();
                 final int airlineId = delay.getAirlineId();
                 if (LookupUtil.AIRLINES.containsKey(airlineId)) {
                     context.write(NullWritable.get(),

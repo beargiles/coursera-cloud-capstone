@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
@@ -25,6 +27,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
+import com.coyotesong.coursera.cloud.domain.AirlineFlightDelays;
 import com.coyotesong.coursera.cloud.domain.FlightInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
@@ -40,22 +43,58 @@ import com.coyotesong.coursera.cloud.util.LookupUtil;
  * on-time 90% of the time but an hour late for the rest. Is one better than the
  * other? The average delay is the same.
  * 
- * I have decided to go with the 95th-percentile of the arrival delay as my
- * measure of arrival performance. The final 1-in-20 flights may be delayed due
- * to exceptional circumstances where a delay is preferable to flying in bad
- * weather, flying with minor mechanical concerns, etc.
+ * The usual metric is a 'delayed flight' arrives at least 15 minutes late.
+ * This still has the problem of comparing one airline with a lot of flights
+ * that are 16 minutes late with another airline that's usually on time but
+ * occasionally very delayed.
  * 
- * It also doesn't make sense to compare an airline with one daily flight
+ * I have decided to go with the 95th-percentile of the arrival delay as my
+ * measure of arrival performance. That is - you have a 95% chance of making
+ * your connection if you allow this much time between when one flight arrives
+ * and your connecting flight leaves, plus whatever you need to physically
+ * travel from gate to gate.
+ * 
+ * The final 1-in-20 flights may be delayed due to exceptional circumstances
+ * where a delay is preferable to flying in bad weather, flying with minor
+ * mechanical concerns, etc.
+ * 
+ * It doesn't make sense to compare an airline with one daily flight
  * between small airports with the major carriers. Therefore I limit the
  * statistics to the top 25 carriers as measured by number of flights.
- * 
- * (I think the usual metric is passenger miles and I could estimate that using
- * the recorded number of miles and type of aircraft but for now I'll assume
- * that all flights have the same number of passengers.)
+ *
+ * (Sidenote: in the test data the worst performing airline is Frontier
+ * Airlines - the 95th percentile is over 2 hours!)
  *
  * @author bgiles
  */
 public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
+
+    /**
+     * Run task. Arguments are INPUT DIR, OUTPUT DIR, TEMP DIR
+     *
+     * @see org.apache.hadoop.util.Tool#run(java.lang.String[])
+     */
+    @Override
+    public int run(String[] args) throws Exception {
+        final Job jobA = setupFirstJob(new Path(args[0]), new Path(args[2]));
+        boolean success = jobA.waitForCompletion(true);
+        if (!success) {
+            return 0;
+        }
+
+        // we could pass this through from command line
+        URI ritaStatic = null;
+        try {
+            ritaStatic =
+                    Thread.currentThread().getContextClassLoader().getResource("rita-static.zip").toURI();
+        } catch (URISyntaxException e) {
+            // should never happen
+            throw new AssertionError(e);
+        }
+
+        final Job jobB = setupSecondJob(new Path(args[2]), new Path(args[1]), ritaStatic);
+        return jobB.waitForCompletion(true) ? 1 : 0;
+    }
 
     /**
      * Set up first job - it reads input files and creates a file containing the
@@ -114,33 +153,6 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
         job.addCacheFile(ritaStatic);
 
         return job;
-    }
-
-    /**
-     * Run task. Arguments are INPUT DIR, OUTPUT DIR, TEMP DIR
-     *
-     * @see org.apache.hadoop.util.Tool#run(java.lang.String[])
-     */
-    @Override
-    public int run(String[] args) throws Exception {
-        final Job jobA = setupFirstJob(new Path(args[0]), new Path(args[2]));
-        boolean success = jobA.waitForCompletion(true);
-        if (!success) {
-            return 0;
-        }
-
-        // we could pass this through from command line
-        URI ritaStatic = null;
-        try {
-            ritaStatic =
-                    Thread.currentThread().getContextClassLoader().getResource("rita-static.zip").toURI();
-        } catch (URISyntaxException e) {
-            // should never happen
-            throw new AssertionError(e);
-        }
-
-        final Job jobB = setupSecondJob(new Path(args[2]), new Path(args[1]), ritaStatic);
-        return jobB.waitForCompletion(true) ? 1 : 0;
     }
 
     /**
@@ -212,7 +224,7 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
     public static class CompareArrivalDelayReduce
             extends Reducer<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> {
         private Integer n;
-        private TreeSet<AirlineFlightDelaysWritable> airlines;
+        private TreeSet<AirlineFlightDelays> airlines;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -229,13 +241,13 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
             }
 
             // we initially sort the airlines by most flights (or miles)
-            airlines = new TreeSet<AirlineFlightDelaysWritable>() {
+            airlines = new TreeSet<AirlineFlightDelays>() {
                 private static final long serialVersionUID = 1;
 
                 @Override
-                public Comparator<AirlineFlightDelaysWritable> comparator() {
-                    return new Comparator<AirlineFlightDelaysWritable>() {
-                        public int compare(AirlineFlightDelaysWritable x, AirlineFlightDelaysWritable y) {
+                public Comparator<AirlineFlightDelays> comparator() {
+                    return new Comparator<AirlineFlightDelays>() {
+                        public int compare(AirlineFlightDelays x, AirlineFlightDelays y) {
                             return x.getNumFlights() - y.getNumFlights();
                         }
                     };
@@ -253,13 +265,14 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
                         throws IOException, InterruptedException {
 
             final int airlineId = key.get();
-            AirlineFlightDelaysWritable w = new AirlineFlightDelaysWritable(airlineId);
+            AirlineFlightDelays w = new AirlineFlightDelays(airlineId);
             for (AirlineFlightDelaysWritable airline : values) {
-                w.add(airline);
+                w.add(airline.getAirlineFlightDelays());
             }
 
+            // only keep 25 largest airlines, as measured by number of flights.
             airlines.add(w);
-            while (airlines.size() > n) {
+            while (airlines.size() > 25) {
                 airlines.remove(airlines.last());
             }
         }
@@ -274,17 +287,22 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
                 throws IOException, InterruptedException {
 
             // we now sort airlines by on-time arrival statistics
-            final TreeSet<AirlineFlightDelaysWritable> delays = new TreeSet<>(airlines);
+            final List<AirlineFlightDelays> delays = new ArrayList<>(airlines);
+            Collections.sort(delays);
 
-            for (AirlineFlightDelaysWritable delay : delays) {
+            int counter = 0;
+            for (AirlineFlightDelays delay : delays) {
+                if (counter++ >= 10) {
+                    break;
+                }
                 final int airlineId = delay.getAirlineId();
                 if (LookupUtil.AIRLINES.containsKey(airlineId)) {
                     context.write(NullWritable.get(),
-                            new Text(String.format("%7.3f %6.3f %s", delay.getMean() + 2 * delay.getStdDev(),
-                                    delay.getMean(), LookupUtil.AIRLINES.get(airlineId).getName())));
+                            new Text(String.format("(%7.3f) %s", delay.getMean() + 2 * delay.getStdDev(),
+                                    LookupUtil.AIRLINES.get(airlineId).getName())));
                 } else {
-                    context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f (unknown: %d)",
-                            delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), airlineId)));
+                    context.write(NullWritable.get(), new Text(String.format("(%7.3f) (unknown: %d)",
+                            delay.getMean() + 2 * delay.getStdDev(), airlineId)));
                 }
             }
         }

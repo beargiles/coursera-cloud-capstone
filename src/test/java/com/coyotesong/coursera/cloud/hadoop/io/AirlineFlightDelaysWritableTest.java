@@ -2,6 +2,8 @@ package com.coyotesong.coursera.cloud.hadoop.io;
 
 import org.junit.Test;
 
+import com.coyotesong.coursera.cloud.domain.AirlineFlightDelays;
+
 import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
@@ -22,7 +24,7 @@ public class AirlineFlightDelaysWritableTest {
 
     @Test
     public void testDefaultConstructor() {
-        final AirlineFlightDelaysWritable actual = new AirlineFlightDelaysWritable();
+        final AirlineFlightDelays actual = new AirlineFlightDelaysWritable().getAirlineFlightDelays();
         assertEquals(0, actual.getAirlineId());
         assertEquals(0, actual.getNumFlights());
         assertEquals(0, actual.getDelay());
@@ -36,7 +38,7 @@ public class AirlineFlightDelaysWritableTest {
     public void testConstructor() {
         final int airlineId = 1;
         final int delay = 2;
-        final AirlineFlightDelaysWritable actual = new AirlineFlightDelaysWritable(airlineId, delay);
+        final AirlineFlightDelays actual = new AirlineFlightDelaysWritable(airlineId, delay).getAirlineFlightDelays();
         assertEquals(airlineId, actual.getAirlineId());
         assertEquals(1, actual.getNumFlights());
         assertEquals(2, actual.getDelay());
@@ -50,7 +52,7 @@ public class AirlineFlightDelaysWritableTest {
     public void testConstructorInts() {
         final int airlineId = 1;
         final int[] values = new int[] { 2, -3, 4, 5 };
-        final AirlineFlightDelaysWritable actual = new AirlineFlightDelaysWritable(airlineId, values);
+        final AirlineFlightDelays actual = new AirlineFlightDelaysWritable(airlineId, values).getAirlineFlightDelays();
         assertEquals(airlineId, actual.getAirlineId());
         assertEquals(values[0], actual.getNumFlights());
         assertEquals(values[1], actual.getDelay());
@@ -73,13 +75,14 @@ public class AirlineFlightDelaysWritableTest {
             data = baos.toByteArray();
         }
 
-        final AirlineFlightDelaysWritable actual = new AirlineFlightDelaysWritable();
+        final AirlineFlightDelaysWritable dw = new AirlineFlightDelaysWritable();
         try (ByteArrayInputStream bais = new ByteArrayInputStream(data);
                 DataInputStream in = new DataInputStream(bais)) {
 
-            actual.readFields(in);
+            dw.readFields(in);
         }
 
+        final AirlineFlightDelays actual = dw.getAirlineFlightDelays();
         assertEquals(airlineId, actual.getAirlineId());
         assertEquals(1, actual.getNumFlights());
         assertEquals(2, actual.getDelay());

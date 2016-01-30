@@ -46,7 +46,7 @@ public class AirportOnTimePerformanceDriverDeepTest extends AbstractDriverDeepTe
     public void test() throws Exception {
         final String filename = "360692348_T_ONTIME.csv";
 
-        loadDatabase(filename);
+        // loadDatabase(filename);
 
         // run hadoop job
         final URL url = Thread.currentThread().getContextClassLoader().getResource(filename);

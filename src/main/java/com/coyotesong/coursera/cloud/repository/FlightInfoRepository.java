@@ -20,18 +20,35 @@ import com.coyotesong.coursera.cloud.domain.FlightInfo;
  * @author bgiles
  */
 @Repository
-public interface FlightInfoRepository extends JpaRepository<FlightInfo, Long> {
+public interface FlightInfoRepository extends JpaRepository<FlightInfo, Long>, FlightInfoRepositoryCustom {
 
     long countByDestAirportId(Integer id);
 
     long countByOriginAirportId(Integer id);
 
-    @Query(value = "select dest_airport_id from ontime_info where cancelled = false and diverted = false group by dest_airport_id order by count(1) desc", nativeQuery = true)
+    /**
+     * List popular destination airports.
+     * 
+     * @return
+     */
+    @Query(value = "select dest_airport_id from flight_info where cancelled = false and diverted = false group by dest_airport_id order by count(1) desc", nativeQuery = true)
     List<Integer> listPopularDestAirportIds();
 
-    @Query(value = "select origin_airport_id from ontime_info where cancelled = false and diverted = false group by origin_airport_id order by count desc", nativeQuery = true)
+    /**
+     * List popular origin airports.
+     * @return
+     */
+    @Query(value = "select origin_airport_id from flight_info where cancelled = false and diverted = false group by origin_airport_id order by count desc", nativeQuery = true)
     List<Integer> listPopularOriginAirportIds();
 
+    /**
+     * List all flights by (origin id, destination id, airline id) tuples.
+     * 
+     * @param originId
+     * @param destinationId
+     * @param airportId
+     * @return
+     */
     List<FlightInfo> findByOriginAirportIdAndDestAirportIdAndAirlineId(Integer originId, Integer destinationId,
             Integer airportId);
 }

@@ -12,6 +12,7 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
+import com.coyotesong.coursera.cloud.domain.AirlineFlightDelays;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineWritable;
 
@@ -35,9 +36,11 @@ public class AirportsAndAirlineFlightDelaysOutputFormat extends TextOutputFormat
 
         @Override
         public void write(AirportsAndAirlineWritable key, AirlineFlightDelaysWritable value) throws IOException, InterruptedException {
+            AirlineFlightDelays delay = value.getAirlineFlightDelays();
             pw.printf("%d,%d,%d\t%d,%d,%d,%d\n", key.getOriginId(), key.getDestinationId(), key.getAirlineId(),
-                    value.getNumFlights(), value.getDelay(),
-                    value.getDelaySquared(), value.getMaxDelay());
+                    delay.getNumFlights(), delay.getDelay(),
+                    delay.getDelaySquared(), delay.
+                    getMaxDelay());
         }
 
         @Override
