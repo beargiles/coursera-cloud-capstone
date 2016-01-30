@@ -13,12 +13,14 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.ApplicationContext;
 
-import com.coyotesong.coursera.cloud.domain.AirlineInfo;
+import com.coyotesong.coursera.cloud.domain.CarrierInfo;
+import com.coyotesong.coursera.cloud.domain.OntimeInfo;
 import com.coyotesong.coursera.cloud.domain.AirportInfo;
-import com.coyotesong.coursera.cloud.repository.AirlineInfoRepository;
+import com.coyotesong.coursera.cloud.repository.CarrierInfoRepository;
 import com.coyotesong.coursera.cloud.repository.AirportInfoRepository;
 import com.coyotesong.coursera.cloud.repository.LookupAirlineRepository;
 import com.coyotesong.coursera.cloud.repository.LookupAirportRepository;
+import com.coyotesong.coursera.cloud.repository.OntimeInfoRepository;
 import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
@@ -36,10 +38,13 @@ import com.coyotesong.coursera.cloud.util.LookupUtil;
 public class InitializeStaticDatabaseApplication {
     
     @Autowired
-    private AirlineInfoRepository airlineInfoRepository;
+    private AirportInfoRepository airportInfoRepository;
+
+    @Autowired
+    private CarrierInfoRepository carrierInfoRepository;
     
     @Autowired
-    private AirportInfoRepository airportInfoRepository;
+    private OntimeInfoRepository ontimeInfoRepository;
     
     @Autowired
     private LookupAirlineRepository lookupAirlineRepository;
@@ -52,14 +57,14 @@ public class InitializeStaticDatabaseApplication {
      * 
      * @throws Exception
      */
-    public void loadAirlines(String filename) throws Exception {
+    public void loadCarriers(String filename) throws Exception {
         try (InputStream is = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(filename); Reader r = new InputStreamReader(is)) {
             for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
                 String id = record.get(0);
                 if (id.matches("[0-9]+")) {
-                    AirlineInfo airline = AirlineInfo.CSV.parse(record);
-                    airlineInfoRepository.save(airline);
+                    CarrierInfo carrier = CarrierInfo.CSV.parse(record);
+                    carrierInfoRepository.save(carrier);
                 }
             }
         }
@@ -82,6 +87,24 @@ public class InitializeStaticDatabaseApplication {
             }
         }
     }
+    
+    /**
+     * Load ontime performance information.
+     * 
+     * @throws Exception
+     */
+    public void loadOntime(String filename) throws Exception {
+        try (InputStream is = Thread.currentThread().getContextClassLoader()
+                .getResourceAsStream(filename); Reader r = new InputStreamReader(is)) {
+            for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
+                String id = record.get(0);
+                if (id.matches("[0-9]+")) {
+                    OntimeInfo info = OntimeInfo.CSV.parse(record);
+                    ontimeInfoRepository.save(info);
+                }
+            }
+        }
+    }
 
     /**
      * Load static data into database.
@@ -91,7 +114,7 @@ public class InitializeStaticDatabaseApplication {
     public void load() throws Exception {
         // store dynamic lookup data. This has much more information than
         // static lookup data.
-        loadAirlines("485012853_T_CARRIER_DECODE.csv");
+        loadCarriers("485012853_T_CARRIER_DECODE.csv");
         loadAirports("485012853_T_MASTER_CORD.csv");
 
         // store static lookup data.
@@ -101,6 +124,10 @@ public class InitializeStaticDatabaseApplication {
 
         lookupAirlineRepository.save(LookupUtil.AIRLINES.values());
         lookupAirportRepository.save(LookupUtil.AIRPORTS.values());
+
+        // load ontime performance data
+        // we only do this for analysis.
+        // loadOntime("360692348_T_ONTIME.csv");
     }
     
 	public static void main(String[] args) throws Exception {

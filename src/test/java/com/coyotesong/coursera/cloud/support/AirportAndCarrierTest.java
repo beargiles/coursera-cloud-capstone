@@ -13,7 +13,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
 import org.junit.Test;
 
-import com.coyotesong.coursera.cloud.domain.AirlineInfo;
+import com.coyotesong.coursera.cloud.domain.CarrierInfo;
 import com.coyotesong.coursera.cloud.domain.AirportInfo;
 
 /**
@@ -45,13 +45,13 @@ public class AirportAndCarrierTest {
 
     @Test
     public void testCarriers() throws Exception {
-        Map<Integer, AirlineInfo> map = new HashMap<>();
+        Map<Integer, CarrierInfo> map = new HashMap<>();
         try (InputStream is = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream("485012853_T_CARRIER_DECODE.csv"); Reader r = new InputStreamReader(is)) {
             for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
                 String id = record.get(0);
                 if (id.matches("[0-9]+")) {
-                    AirlineInfo airline = AirlineInfo.CSV.parse(record);
+                    CarrierInfo airline = CarrierInfo.CSV.parse(record);
                     map.put(airline.getAirlineId(), airline);
                 }
             }

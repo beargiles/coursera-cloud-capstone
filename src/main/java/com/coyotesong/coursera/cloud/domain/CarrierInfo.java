@@ -18,7 +18,7 @@ import org.apache.commons.csv.CSVRecord;
  * @author bgiles
  */
 @Entity
-public class AirlineInfo {
+public class CarrierInfo {
     private Integer airlineId;
     private String carrier;
     private String carrierEntity;
@@ -33,7 +33,7 @@ public class AirlineInfo {
     private Date startDate;
     private Date stopDate;
 
-    public AirlineInfo() {
+    public CarrierInfo() {
 
     }
 
@@ -150,7 +150,7 @@ public class AirlineInfo {
      * @author bgiles
      */
     public static class Builder {
-        private AirlineInfo info = new AirlineInfo();
+        private CarrierInfo info = new CarrierInfo();
 
         public Builder(int id) {
             info.setAirlineId(id);
@@ -204,7 +204,7 @@ public class AirlineInfo {
             info.stopDate = stopDate;
         }
 
-        public AirlineInfo build() {
+        public CarrierInfo build() {
             return info;
         }
     }
@@ -215,7 +215,7 @@ public class AirlineInfo {
      * @author bgiles
      */
     public static class CSV {
-        public static AirlineInfo parse(CSVRecord record) {
+        public static CarrierInfo parse(CSVRecord record) {
             if (!record.get(0).matches("[0-9]+")) {
                 throw new IllegalArgumentException("not valid CSV record");
             }

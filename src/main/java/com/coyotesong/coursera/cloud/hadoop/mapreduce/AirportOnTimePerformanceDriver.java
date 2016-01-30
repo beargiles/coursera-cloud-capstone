@@ -29,7 +29,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
-import com.coyotesong.coursera.cloud.domain.AirlineInfo;
+import com.coyotesong.coursera.cloud.domain.CarrierInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineWritable;
 import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
@@ -288,12 +288,12 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
         protected void cleanup(Reducer<AirportsAndAirlineWritable, AirlineFlightDelaysWritable, NullWritable, Text>.Context context)
                 throws IOException, InterruptedException {
 
-            final Map<Integer, AirlineInfo> air = new HashMap<>();
+            final Map<Integer, CarrierInfo> air = new HashMap<>();
             try (Reader r = new FileReader(new File(ROOT, "485012853_T_CARRIER_DECODE.csv"))) {
                 for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
                     String id = record.get(0);
                     if (id.matches("[0-9]+")) {
-                        AirlineInfo info = AirlineInfo.CSV.parse(record);
+                        CarrierInfo info = CarrierInfo.CSV.parse(record);
                         air.put(info.getAirlineId(), info);
                     }
                 }

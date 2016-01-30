@@ -3,6 +3,7 @@ package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -27,16 +28,16 @@ import com.coyotesong.coursera.cloud.util.CSVParser;
 import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
- * Hadoop driver that identifies the most popular airports by total
- * number of arrivals and departures.
+ * Hadoop driver that identifies the most popular airports by total number of
+ * arrivals and departures.
  * 
  * @author bgiles
  */
 public class PopularAirportsDriver extends Configured implements Tool {
 
     /**
-     * Set up first job - it reads input files and creates a
-     * file containing the airport ID and total number of flights.
+     * Set up first job - it reads input files and creates a file containing the
+     * airport ID and total number of flights.
      * 
      * @param input
      * @param output
@@ -61,10 +62,10 @@ public class PopularAirportsDriver extends Configured implements Tool {
 
         return job;
     }
-    
+
     /**
-     * Set up second job - it reads file containing airport ID and
-     * number of flights and identifies the most popular airports.
+     * Set up second job - it reads file containing airport ID and number of
+     * flights and identifies the most popular airports.
      */
     public Job setupSecondJob(Path input, Path output) throws IOException {
         final Job job = Job.getInstance(this.getConf(), "Top Airports");
@@ -86,9 +87,17 @@ public class PopularAirportsDriver extends Configured implements Tool {
 
         job.setJarByClass(PopularAirportsDriver.class);
 
+        try {
+            job.setCacheFiles(new URI[] {
+                    Thread.currentThread().getContextClassLoader().getResource("rita-static.zip").toURI() });
+        } catch (URISyntaxException e) {
+            // should never happen
+            throw new AssertionError(e);
+        }
+
         return job;
     }
-    
+
     /**
      * @see org.apache.hadoop.util.Tool#run(java.lang.String[])
      */
@@ -106,8 +115,8 @@ public class PopularAirportsDriver extends Configured implements Tool {
 
     /**
      * The mapper reads one line of the CSV file and produces a (airport, 1)
-     * entry for both origin and destination. The total number of arrivals
-     * and departures should be roughly the same for every airport.
+     * entry for both origin and destination. The total number of arrivals and
+     * departures should be roughly the same for every airport.
      */
     public static class GatherFlightsMap extends Mapper<LongWritable, Text, IntWritable, IntWritable> {
         private static final IntWritable ONE = new IntWritable(1);
@@ -118,7 +127,7 @@ public class PopularAirportsDriver extends Configured implements Tool {
         protected void setup(Mapper<LongWritable, Text, IntWritable, IntWritable>.Context context) {
             // TODO: retrieve originIdx and destinationIdx from configuration
         }
-        
+
         @Override
         protected void map(LongWritable key, Text value,
                 Mapper<LongWritable, Text, IntWritable, IntWritable>.Context context)
@@ -127,7 +136,7 @@ public class PopularAirportsDriver extends Configured implements Tool {
 
             final String originId = values.get(originIdx);
             if (originId.matches("[0-9]+")) {
-                context.write(new IntWritable(Integer.parseInt(originId)), ONE);
+                // context.write(new IntWritable(Integer.parseInt(originId)), ONE);
             }
 
             final String destinationId = values.get(destinationIdx);
@@ -159,8 +168,9 @@ public class PopularAirportsDriver extends Configured implements Tool {
     public static class TopAirportsMap extends Mapper<Text, Text, NullWritable, AirportFlightsWritable> {
 
         @Override
-        protected void map(Text key, Text value, Mapper<Text, Text, NullWritable, AirportFlightsWritable>.Context context)
-                throws IOException, InterruptedException {
+        protected void map(Text key, Text value,
+                Mapper<Text, Text, NullWritable, AirportFlightsWritable>.Context context)
+                        throws IOException, InterruptedException {
             final int airportId = Integer.parseInt(key.toString());
             final int flights = Integer.parseInt(value.toString());
             context.write(NullWritable.get(), new AirportFlightsWritable(airportId, flights));
@@ -180,7 +190,7 @@ public class PopularAirportsDriver extends Configured implements Tool {
             this.n = conf.getInt("N", 10);
 
             // load AIRPORTS lookup table.
-            for (URI uri : context.getCacheArchives()) {
+            for (URI uri : context.getCacheFiles()) {
                 if ("file".equals(uri.getScheme())) {
                     if (uri.getPath().endsWith("rita-static.zip")) {
                         LookupUtil.load(new File(uri.getPath()));

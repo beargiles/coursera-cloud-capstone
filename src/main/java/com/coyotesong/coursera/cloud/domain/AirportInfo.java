@@ -334,8 +334,8 @@ public class AirportInfo {
                 // eat it - not important.
             }
 
-            builder.setClosed("1".equals(record.get(26)));
-            builder.setLatest("1".equals(record.get(27)));
+            builder.setClosed(!"0".equals(record.get(26)));
+            builder.setLatest(!"0".equals(record.get(27)));
 
             AirportInfo airport = builder.build();
             return airport;
