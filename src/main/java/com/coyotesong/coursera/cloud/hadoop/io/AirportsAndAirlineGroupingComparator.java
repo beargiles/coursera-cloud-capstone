@@ -1,5 +1,6 @@
 package com.coyotesong.coursera.cloud.hadoop.io;
 
+import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;
 
 /**
@@ -10,30 +11,26 @@ import org.apache.hadoop.io.WritableComparator;
  */
 public class AirportsAndAirlineGroupingComparator
         extends WritableComparator {
-
-    /**
-     * Compare two objects. We only compare the airports.
-     */
+    
     @Override
-    public int compare(Object lobj, Object robj) {
-        AirportsAndAirlineWritable l = (AirportsAndAirlineWritable) lobj;
-        AirportsAndAirlineWritable r = (AirportsAndAirlineWritable) robj;
-
-        int lhs = l.getOriginId();
-        int rhs = r.getOriginId();
-        if (lhs < rhs) {
+    public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+        int p = readInt(b1, s1);
+        int q = readInt(b2, s2);
+        if (p < q) {
             return -1;
-        } else if (lhs > rhs) {
+        } else if (p > q) {
             return 1;
         }
+        
+        p = readInt(b1, s1 + 4);
+        q = readInt(b2, s2 + 4);
 
-        lhs = l.getDestinationId();
-        rhs = r.getDestinationId();
-        if (lhs < rhs) {
+        if (p < q) {
             return -1;
-        } else if (lhs > rhs) {
+        } else if (p > q) {
             return 1;
         }
+        
         return 0;
     }
 }

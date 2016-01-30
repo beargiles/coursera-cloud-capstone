@@ -7,29 +7,22 @@ package com.coyotesong.coursera.cloud.hadoop.io;
  */
 public class AirportsAndAirlineSortingComparator
         extends AirportsAndAirlineGroupingComparator {
-
-    /**
-     * Compare two objects. We add flightId to sort criteria.
-     */
+    
     @Override
-    public int compare(Object lobj, Object robj) {
-        // perform grouping comparison
-        int s = super.compare(lobj, robj);
-        if (s != 0) {
-            return s;
+    public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+        int r = super.compare(b1, s1, l1, b2, s2, l2);
+        if (r != 0) {
+            return r;
         }
 
-        // now compare airline ids
-        AirportsAndAirlineWritable l = (AirportsAndAirlineWritable) lobj;
-        AirportsAndAirlineWritable r = (AirportsAndAirlineWritable) robj;
-
-        int lhs = l.getAirlineId();
-        int rhs = r.getAirlineId();
-        if (lhs < rhs) {
+        int p = readInt(b1, s1 + 8);
+        int q = readInt(b2, s2 + 8);
+        if (p < q) {
             return -1;
-        } else if (lhs > rhs) {
+        } else if (p > q) {
             return 1;
         }
+        
         return 0;
     }
 }

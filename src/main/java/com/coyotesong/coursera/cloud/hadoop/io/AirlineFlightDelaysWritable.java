@@ -173,7 +173,7 @@ public class AirlineFlightDelaysWritable implements Writable, Comparable<Airline
 
     @Override
     public String toString() {
-        return String.format("[AirlineFlightDelays %d, %d, %d, %d, %d]", airlineId, numFlights, delay,
+        return String.format("%d,%d,%d,%d,%d", airlineId, numFlights, delay,
                 delaySquared, maxDelay);
     }
 

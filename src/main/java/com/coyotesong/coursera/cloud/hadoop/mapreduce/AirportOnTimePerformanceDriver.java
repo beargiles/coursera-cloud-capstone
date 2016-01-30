@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.net.URI;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
@@ -30,10 +32,14 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
 import com.coyotesong.coursera.cloud.domain.CarrierInfo;
+import com.coyotesong.coursera.cloud.domain.OntimeInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
+import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineGroupingComparator;
+import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineSortingComparator;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineWritable;
 import com.coyotesong.coursera.cloud.hadoop.mapreduce.lib.output.AirlineFlightDelaysOutputFormat;
 import com.coyotesong.coursera.cloud.util.CSVParser;
+import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
  * Hadoop driver that identifies the airlines with the best on-time arrival
@@ -45,7 +51,6 @@ import com.coyotesong.coursera.cloud.util.CSVParser;
  * @author bgiles
  */
 public class AirportOnTimePerformanceDriver extends Configured implements Tool {
-    private static final File ROOT = new File("/media/router/Documents/Coursera Cloud");
 
     /**
      * Set up first job - it reads input files and creates a file containing the
@@ -66,11 +71,14 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
         job.setMapperClass(GatherArrivalDelayMap.class);
         job.setReducerClass(GatherArrivalDelayReduce.class);
         job.setCombinerClass(GatherArrivalDelayReduce.class);
+        job.setSortComparatorClass(AirportsAndAirlineSortingComparator.class);
+        job.setGroupingComparatorClass(AirportsAndAirlineGroupingComparator.class);
+        job.setPartitionerClass(GatherArrivalDelayPartitioner.class);
 
         FileInputFormat.setInputPaths(job, input);
         FileOutputFormat.setOutputPath(job, output);
 
-        job.setOutputFormatClass(AirlineFlightDelaysOutputFormat.class);
+        // job.setOutputFormatClass(AirlineFlightDelaysOutputFormat.class);
 
         job.setJarByClass(AirportOnTimePerformanceDriver.class);
 
@@ -130,18 +138,6 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
      */
     public static class GatherArrivalDelayMap
             extends Mapper<LongWritable, Text, AirportsAndAirlineWritable, AirlineFlightDelaysWritable> {
-        private int airlineIdx = 5;
-        private int originIdx = 8;
-        private int destinationIdx = 11;
-        private int arrDelayIdx = 17;
-        private int cancelledIdx = 18;
-        private int divertedIdx = 19;
-
-        @Override
-        protected void setup(
-                Mapper<LongWritable, Text, AirportsAndAirlineWritable, AirlineFlightDelaysWritable>.Context context) {
-            // TODO: retrieve indexes
-        }
 
         @Override
         protected void map(LongWritable key, Text value,
@@ -149,52 +145,65 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
                         throws IOException, InterruptedException {
             final List<String> values = CSVParser.parse(value.toString());
 
-            // do not consider cancelled or diverted flights.
-            final boolean cancelled = !"0.00".equals(values.get(cancelledIdx));
-            final boolean diverted = !"0.00".equals(values.get(divertedIdx));
-            if (cancelled || diverted) {
-                return;
-            }
-
-            // get airlineID and arrival delay.
-            final String airlineIdStr = values.get(airlineIdx);
-            final String originIdStr = values.get(originIdx);
-            final String destinationIdStr = values.get(destinationIdx);
-            String arrDelayStr = values.get(arrDelayIdx);
-            final int idx = arrDelayStr.indexOf('.');
-            if (idx > 0) {
-                arrDelayStr = arrDelayStr.substring(0, idx);
-            }
-            if (airlineIdStr.matches("[0-9]+") && originIdStr.matches("[0-9]+") && destinationIdStr.matches("[0-9]+")
-                    && arrDelayStr.matches("-?[0-9]+")) {
-                final int airlineId = Integer.parseInt(airlineIdStr);
-                final int originId = Integer.parseInt(originIdStr);
-                final int destinationId = Integer.parseInt(destinationIdStr);
-                final int delay = Integer.parseInt(arrDelayStr);
-                final AirportsAndAirlineWritable outKey = new AirportsAndAirlineWritable(originId, destinationId,
-                        airlineId);
-                context.write(outKey, new AirlineFlightDelaysWritable(airlineId, delay));
+            // skip first line
+            if (values.get(0).matches("[0-9]+")) {
+                final OntimeInfo flight = OntimeInfo.Builder.build(values);
+                if (!flight.isCancelled() && !flight.isDiverted()) {
+                    final AirportsAndAirlineWritable outKey = new AirportsAndAirlineWritable(
+                            flight.getOriginAirportId(), flight.getDestAirportId(), flight.getAirlineId());
+                    final AirlineFlightDelaysWritable outValue = new AirlineFlightDelaysWritable(flight.getAirlineId(),
+                            flight.getArrivalDelay().intValue());
+                    context.write(outKey, outValue);
+                }
             }
         }
     }
 
     /**
-     * The reducer adds up the delays for each pairs of airports and airline
+     * The reducer adds up the delays for each pairs of airports and airline.
+     * The grouping comparator means that each call will have all data for
+     * each (origin id, destination id) pair.
      */
     public static class GatherArrivalDelayReduce extends
             Reducer<AirportsAndAirlineWritable, AirlineFlightDelaysWritable, AirportsAndAirlineWritable, AirlineFlightDelaysWritable> {
+
         @Override
         protected void reduce(AirportsAndAirlineWritable key, Iterable<AirlineFlightDelaysWritable> values,
                 Reducer<AirportsAndAirlineWritable, AirlineFlightDelaysWritable, AirportsAndAirlineWritable, AirlineFlightDelaysWritable>.Context context)
                         throws IOException, InterruptedException {
-            final AirlineFlightDelaysWritable w = new AirlineFlightDelaysWritable(key.getAirlineId());
+            
+            // gather statistics for each (origin, destination, airline)
+            final Map<AirportsAndAirlineWritable, AirlineFlightDelaysWritable> airlines = new HashMap<>();
             for (AirlineFlightDelaysWritable value : values) {
-                w.add(value);
+                final AirportsAndAirlineWritable k = new AirportsAndAirlineWritable(key.getOriginId(), key.getDestinationId(),
+                        value.getAirlineId());
+                if (!airlines.containsKey(k)) {
+                    airlines.put(k, new AirlineFlightDelaysWritable(key.getAirlineId()));
+                }
+                airlines.get(k).add(value);
             }
-            context.write(key, w);
+
+            // publish results.
+            for (Map.Entry<AirportsAndAirlineWritable, AirlineFlightDelaysWritable> entry : airlines.entrySet()) {
+                context.write(entry.getKey(), entry.getValue());
+            }
         }
     }
 
+    /**
+     * Partitioner used with grouping comparator.
+     * 
+     * @author bgiles
+     */
+    public static class GatherArrivalDelayPartitioner extends Partitioner<AirportsAndAirlineWritable, AirlineFlightDelaysWritable> {
+
+        @Override
+        public int getPartition(AirportsAndAirlineWritable key, AirlineFlightDelaysWritable value, int numPartitions) {
+            int hashCode = 31 * key.getOriginId() + key.getDestinationId();
+            return hashCode % numPartitions;
+        }
+    }
+    
     /**
      * This mapper loads the airline id and on-time arrival delay information
      */
@@ -285,16 +294,15 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
          * @see org.apache.hadoop.mapreduce.Reducer#cleanup(org.apache.hadoop.mapreduce.Reducer.Context)
          */
         @Override
-        protected void cleanup(Reducer<AirportsAndAirlineWritable, AirlineFlightDelaysWritable, NullWritable, Text>.Context context)
-                throws IOException, InterruptedException {
+        protected void cleanup(
+                Reducer<AirportsAndAirlineWritable, AirlineFlightDelaysWritable, NullWritable, Text>.Context context)
+                        throws IOException, InterruptedException {
 
-            final Map<Integer, CarrierInfo> air = new HashMap<>();
-            try (Reader r = new FileReader(new File(ROOT, "485012853_T_CARRIER_DECODE.csv"))) {
-                for (CSVRecord record : CSVFormat.EXCEL.parse(r)) {
-                    String id = record.get(0);
-                    if (id.matches("[0-9]+")) {
-                        CarrierInfo info = CarrierInfo.CSV.parse(record);
-                        air.put(info.getAirlineId(), info);
+            // load AIRLINES lookup table.
+            for (URI uri : context.getCacheFiles()) {
+                if ("file".equals(uri.getScheme())) {
+                    if (uri.getPath().endsWith("rita-static.zip")) {
+                        LookupUtil.load(new File(uri.getPath()));
                     }
                 }
             }
@@ -304,9 +312,10 @@ public class AirportOnTimePerformanceDriver extends Configured implements Tool {
 
             for (AirlineFlightDelaysWritable delay : delays) {
                 final int airlineId = delay.getAirlineId();
-                if (air.containsKey(airlineId)) {
-                    context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f %s",
-                            delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), air.get(airlineId).getCarrierName())));
+                if (LookupUtil.AIRLINES.containsKey(airlineId)) {
+                    context.write(NullWritable.get(),
+                            new Text(String.format("%7.3f %6.3f %s", delay.getMean() + 2 * delay.getStdDev(),
+                                    delay.getMean(), LookupUtil.AIRLINES.get(airlineId).getName())));
                 } else {
                     context.write(NullWritable.get(), new Text(String.format("%7.3f %6.3f (unknown: %d)",
                             delay.getMean() + 2 * delay.getStdDev(), delay.getMean(), airlineId)));

@@ -1,11 +1,8 @@
 package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Arrays;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
@@ -18,18 +15,12 @@ import org.junit.Test;
 import com.coyotesong.coursera.cloud.hadoop.io.AirlineFlightDelaysWritable;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportsAndAirlineWritable;
 
-import static org.junit.Assert.assertTrue;
-
 /**
  * Test class to compare on-time arrival performance.
  * 
  * @author bgiles
  */
 public class AirportOnTimePerformanceDriverTest {
-    private static final File ROOT = new File("/media/router/Documents/Coursera Cloud");
-    private static final File ONTIME_FILE = new File(ROOT, "360692348_T_ONTIME.csv");
-    private static final File OUTPUT = new File("/tmp/count");
-
     static {
         System.setProperty("hadoop.home.dir", "/opt/hadoop");
         try {
@@ -98,37 +89,37 @@ public class AirportOnTimePerformanceDriverTest {
     }
 
     /**
-     * Test CompareArrivalDelayMap. It does nothing but combine the key and value into
-     * a new tuple.
+     * Test CompareArrivalDelayMap. It does nothing but combine the key and
+     * value into a new tuple.
      */
     /*
-    @Test
-    public void testCompareArrivalDelayMap() throws IOException {
-        final MapDriver<Text, Text, IntWritable, AirlineFlightDelaysWritable> driver = new MapDriver<>();
-        driver.withMapper(new AirlineOnTimePerformanceDriver.CompareArrivalDelayMap());
-        driver.withInput(new Text("19805"), new Text("2,-12,410,7"));
-        driver.withOutput(new IntWritable(19805), new AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 }));
-        driver.runTest();
-    }
-    */
-    
+     * @Test public void testCompareArrivalDelayMap() throws IOException { final
+     * MapDriver<Text, Text, IntWritable, AirlineFlightDelaysWritable> driver =
+     * new MapDriver<>(); driver.withMapper(new
+     * AirlineOnTimePerformanceDriver.CompareArrivalDelayMap());
+     * driver.withInput(new Text("19805"), new Text("2,-12,410,7"));
+     * driver.withOutput(new IntWritable(19805), new
+     * AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 }));
+     * driver.runTest(); }
+     */
+
     /**
      * Test CompareArrivalDelayReduce.
      */
     /*
-    @Test
-    public void testCompareArrivalDelayReduce() throws IOException {
-        final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
-        driver.withReducer(new AirlineOnTimePerformanceDriver.CompareArrivalDelayReduce());
-        driver.withInput(new IntWritable(19805), Arrays.asList(new AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 })));
-        driver.withOutput(NullWritable.get(), new Text(" 30.770 -6.000 American Airlines Inc."));
-        driver.runTest();
-    }
-    */
-    
+     * @Test public void testCompareArrivalDelayReduce() throws IOException {
+     * final ReduceDriver<IntWritable, AirlineFlightDelaysWritable,
+     * NullWritable, Text> driver = new ReduceDriver<>(); driver.withReducer(new
+     * AirlineOnTimePerformanceDriver.CompareArrivalDelayReduce());
+     * driver.withInput(new IntWritable(19805), Arrays.asList(new
+     * AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 })));
+     * driver.withOutput(NullWritable.get(), new Text(
+     * " 30.770 -6.000 American Airlines Inc.")); driver.runTest(); }
+     */
+
     /**
-     * Test CompareArrivalDelayReduce - verify only the top 25 airlines
-     * are compared.
+     * Test CompareArrivalDelayReduce - verify only the top 25 airlines are
+     * compared.
      * 
      * @throws Exception
      */
@@ -138,18 +129,4 @@ public class AirportOnTimePerformanceDriverTest {
         final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
         // FIXME: implement
     }
-    
-    @Test
-    @Ignore
-    public void demonstrate() throws Exception {
-        final CarrierOnTimePerformanceDriver driver = new CarrierOnTimePerformanceDriver();
-        driver.setConf(new Configuration());
-
-        final File tempdir = Files.createTempDirectory("airlineOntime_").toFile();
-        final File workdir = new File(tempdir, "work");
-
-        assertTrue(driver.run(new String[] { ONTIME_FILE.getAbsolutePath(), OUTPUT.getAbsolutePath(),
-                workdir.getAbsolutePath() }) == 1);
-    }
-
 }
