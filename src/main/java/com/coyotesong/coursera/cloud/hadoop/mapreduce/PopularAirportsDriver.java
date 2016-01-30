@@ -23,6 +23,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.Tool;
 
+import com.coyotesong.coursera.cloud.domain.OntimeInfo;
 import com.coyotesong.coursera.cloud.hadoop.io.AirportFlightsWritable;
 import com.coyotesong.coursera.cloud.util.CSVParser;
 import com.coyotesong.coursera.cloud.util.LookupUtil;
@@ -34,6 +35,30 @@ import com.coyotesong.coursera.cloud.util.LookupUtil;
  * @author bgiles
  */
 public class PopularAirportsDriver extends Configured implements Tool {
+
+    /**
+     * @see org.apache.hadoop.util.Tool#run(java.lang.String[])
+     */
+    @Override
+    public int run(String[] args) throws Exception {
+        final Job jobA = setupFirstJob(new Path(args[0]), new Path(args[2]));
+        boolean success = jobA.waitForCompletion(true);
+        if (!success) {
+            return 0;
+        }
+
+        // should get from argument list.
+        URI ritaStatic = null;
+        try {
+            ritaStatic = Thread.currentThread().getContextClassLoader().getResource("rita-static.zip").toURI();
+        } catch (URISyntaxException e) {
+            // should never happen
+            throw new AssertionError(e);
+        }
+
+        final Job jobB = setupSecondJob(new Path(args[2]), new Path(args[1]), ritaStatic);
+        return jobB.waitForCompletion(true) ? 1 : 0;
+    }
 
     /**
      * Set up first job - it reads input files and creates a file containing the
@@ -67,7 +92,7 @@ public class PopularAirportsDriver extends Configured implements Tool {
      * Set up second job - it reads file containing airport ID and number of
      * flights and identifies the most popular airports.
      */
-    public Job setupSecondJob(Path input, Path output) throws IOException {
+    public Job setupSecondJob(Path input, Path output, URI ritaStatic) throws IOException {
         final Job job = Job.getInstance(this.getConf(), "Top Airports");
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputValueClass(Text.class);
@@ -87,30 +112,9 @@ public class PopularAirportsDriver extends Configured implements Tool {
 
         job.setJarByClass(PopularAirportsDriver.class);
 
-        try {
-            job.setCacheFiles(new URI[] {
-                    Thread.currentThread().getContextClassLoader().getResource("rita-static.zip").toURI() });
-        } catch (URISyntaxException e) {
-            // should never happen
-            throw new AssertionError(e);
-        }
+        job.addCacheFile(ritaStatic);
 
         return job;
-    }
-
-    /**
-     * @see org.apache.hadoop.util.Tool#run(java.lang.String[])
-     */
-    @Override
-    public int run(String[] args) throws Exception {
-        final Job jobA = setupFirstJob(new Path(args[0]), new Path(args[2]));
-        boolean success = jobA.waitForCompletion(true);
-        if (!success) {
-            return 0;
-        }
-
-        final Job jobB = setupSecondJob(new Path(args[2]), new Path(args[1]));
-        return jobB.waitForCompletion(true) ? 1 : 0;
     }
 
     /**
@@ -120,28 +124,20 @@ public class PopularAirportsDriver extends Configured implements Tool {
      */
     public static class GatherFlightsMap extends Mapper<LongWritable, Text, IntWritable, IntWritable> {
         private static final IntWritable ONE = new IntWritable(1);
-        private int originIdx = 8;
-        private int destinationIdx = 11;
-
-        @Override
-        protected void setup(Mapper<LongWritable, Text, IntWritable, IntWritable>.Context context) {
-            // TODO: retrieve originIdx and destinationIdx from configuration
-        }
 
         @Override
         protected void map(LongWritable key, Text value,
                 Mapper<LongWritable, Text, IntWritable, IntWritable>.Context context)
                         throws IOException, InterruptedException {
+
+            // skip first line
             final List<String> values = CSVParser.parse(value.toString());
+            if (values.get(0).matches("[0-9]+")) {
+                final OntimeInfo info = OntimeInfo.Builder.build(values);
 
-            final String originId = values.get(originIdx);
-            if (originId.matches("[0-9]+")) {
-                // context.write(new IntWritable(Integer.parseInt(originId)), ONE);
-            }
-
-            final String destinationId = values.get(destinationIdx);
-            if (destinationId.matches("[0-9]+")) {
-                context.write(new IntWritable(Integer.parseInt(destinationId)), ONE);
+                if (!info.isCancelled() && !info.isDiverted()) {
+                    context.write(new IntWritable(info.getDestAirportId()), ONE);
+                }
             }
         }
     }

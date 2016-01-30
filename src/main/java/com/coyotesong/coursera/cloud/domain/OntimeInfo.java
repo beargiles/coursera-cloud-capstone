@@ -4,6 +4,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -311,6 +312,44 @@ public class OntimeInfo {
         
         public OntimeInfo build() {
             return info;
+        }
+
+        public static OntimeInfo build(List<String> values) {
+            final DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+            final Builder builder = new Builder();
+            
+            builder.setYear(Integer.parseInt(values.get(0)));
+            builder.setMonth(Integer.parseInt(values.get(1)));
+            builder.setDayOfMonth(Integer.parseInt(values.get(2)));
+            builder.setDayOfWeek(Integer.parseInt(values.get(3)));
+            try {
+                builder.setFlightDate(df.parse(values.get(4)));
+            } catch (ParseException e) {
+                
+            }
+            builder.setAirlineId(Integer.parseInt(values.get(5)));
+            builder.setTailNumber(values.get(6));
+            builder.setFlightNumber(values.get(7));
+            builder.setOriginAirportId(Integer.parseInt(values.get(8)));
+            builder.setOriginAirportSeqId(Integer.parseInt(values.get(9)));
+            builder.setOriginCityMarketId(Integer.parseInt(values.get(10)));
+            builder.setDestAirportId(Integer.parseInt(values.get(11)));
+            builder.setDestAirportSeqId(Integer.parseInt(values.get(12)));
+            builder.setDestCityMarketId(Integer.parseInt(values.get(13)));
+            builder.setCrsDepartureTime(values.get(14));
+            if (!values.get(15).isEmpty()) {
+                builder.setDepartureDelay(Float.parseFloat(values.get(15)));
+            }
+            if (!values.get(16).isEmpty()) {
+                builder.setCrsArrivalTime(values.get(16));
+            }
+            if (!values.get(17).isEmpty()) {
+                builder.setArrivalDelay(Float.parseFloat(values.get(17)));
+            }
+            builder.setCancelled(!"0.00".equals(values.get(18)));
+            builder.setDiverted(!"0.00".equals(values.get(19)));
+
+            return builder.build();
         }
     }
 
