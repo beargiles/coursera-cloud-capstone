@@ -127,12 +127,12 @@ public class CarrierOnTimePerformanceDriverTest {
     public void testCompareArrivalDelayReduce() throws IOException, URISyntaxException {
         final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
         final URI uri = this.getClass().getClassLoader().getResource("rita-static.zip").toURI();
-        driver.setCacheArchives(new URI[] { uri });
+        driver.addCacheFile(uri);
 
         driver.withReducer(new CarrierOnTimePerformanceDriver.CompareArrivalDelayReduce());
         driver.withInput(new IntWritable(19805),
                 Arrays.asList(new AirlineFlightDelaysWritable(19805, new int[] { 2, -12, 410, 7 })));
-        driver.withOutput(NullWritable.get(), new Text(" 30.770 -6.000 American Airlines Inc."));
+        driver.withOutput(NullWritable.get(), new Text("( 30.770) American Airlines Inc."));
         driver.runTest();
     }
 
@@ -148,10 +148,10 @@ public class CarrierOnTimePerformanceDriverTest {
         final MapReduceDriver<Text, Text, IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new MapReduceDriver<>(
                 mapper, reducer);
         final URI uri = this.getClass().getClassLoader().getResource("rita-static.zip").toURI();
-        driver.setCacheArchives(new URI[] { uri });
+        driver.addCacheFile(uri);
 
         driver.withInput(new Text("19805"), new Text("2,-12,410,7"));
-        driver.withOutput(NullWritable.get(), new Text(" 30.770 -6.000 American Airlines Inc."));
+        driver.withOutput(NullWritable.get(), new Text("( 30.770) American Airlines Inc."));
         driver.runTest();
     }
 
@@ -164,7 +164,7 @@ public class CarrierOnTimePerformanceDriverTest {
     @Test
     @Ignore
     public void testCompareArrivalDelayReduceTopAirlines() throws IOException {
-        final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
+        // final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
         // FIXME: implement
     }
 }

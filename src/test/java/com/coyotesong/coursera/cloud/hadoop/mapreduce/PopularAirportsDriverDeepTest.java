@@ -1,23 +1,18 @@
 package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.net.URL;
 import java.nio.file.Files;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -30,13 +25,9 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.coyotesong.coursera.cloud.configuration.DefaultConfig;
 import com.coyotesong.coursera.cloud.configuration.RepositoryConfiguration;
-import com.coyotesong.coursera.cloud.domain.AirportInfo;
 import com.coyotesong.coursera.cloud.domain.LookupAirport;
-import com.coyotesong.coursera.cloud.domain.FlightInfo;
-import com.coyotesong.coursera.cloud.repository.AirportInfoRepository;
-import com.coyotesong.coursera.cloud.repository.LookupAirportRepository;
 import com.coyotesong.coursera.cloud.repository.FlightInfoRepository;
-import com.coyotesong.coursera.cloud.util.LookupUtil;
+import com.coyotesong.coursera.cloud.repository.LookupAirportRepository;
 
 /**
  * Deep test class to identify popular airports. This test performs
@@ -93,7 +84,6 @@ public class PopularAirportsDriverDeepTest extends AbstractDriverDeepTest {
             // find 10 most popular airports and then reverse the order.
             List<Integer> ids = flightInfoRepository.listPopularDestAirportIds();
             ids = ids.subList(0, Math.min(10,ids.size()));
-            Collections.reverse(ids);
 
             final Iterator<Integer> iter = ids.iterator();
             while (((line = lnr.readLine()) != null) && iter.hasNext()) {

@@ -44,7 +44,6 @@ public class PopularAirportsDriverTest {
         driver.withMapper(new PopularAirportsDriver.GatherFlightsMap());
         driver.withInput(inKey, new Text(
                 "2015,1,1,4,2015-01-01,19805,\"N787AA\",\"1\",12478,1247802,31703,12892,1289203,32575,\"0900\",-5.00,\"1230\",7.00,0.00,0.00,"));
-        driver.withOutput(new IntWritable(12478), new IntWritable(1));
         driver.withOutput(new IntWritable(12892), new IntWritable(1));
         driver.runTest();
     }
@@ -78,9 +77,7 @@ public class PopularAirportsDriverTest {
                 "2015,1,2,5,2015-01-02,19805,\"N795AA\",\"1\",12478,1247802,31703,12892,1289203,32575,\"0900\",-10.00,\"1230\",-19.00,0.00,0.00,"));
         driver.withInput(new LongWritable(2), new Text(
                 "2015,1,9,5,2015-01-09,19805,\"N379AA\",\"5\",11298,1129803,30194,12173,1217302,32134,\"1315\",5.00,\"1758\",-13.00,0.00,0.00,"));
-        driver.withOutput(new IntWritable(11298), new IntWritable(1));
         driver.withOutput(new IntWritable(12173), new IntWritable(1));
-        driver.withOutput(new IntWritable(12478), new IntWritable(2));
         driver.withOutput(new IntWritable(12892), new IntWritable(2));
         driver.runTest();
     }
@@ -105,7 +102,7 @@ public class PopularAirportsDriverTest {
     public void testTopAirportsReduce() throws IOException, URISyntaxException {
         final ReduceDriver<NullWritable, AirportFlightsWritable, IntWritable, Text> driver = new ReduceDriver<>();
         final URI uri = this.getClass().getClassLoader().getResource("rita-static.zip").toURI();
-        driver.setCacheArchives(new URI[] { uri });
+        driver.addCacheFile(uri);
         
         driver.withReducer(new PopularAirportsDriver.TopAirportsReduce());
         driver.withInput(NullWritable.get(), Arrays.asList(new AirportFlightsWritable(12478, 3)));
@@ -123,7 +120,7 @@ public class PopularAirportsDriverTest {
         final MapReduceDriver<Text, Text, NullWritable, AirportFlightsWritable, IntWritable, Text> driver = new MapReduceDriver<>(
                 mapper, reducer);
         final URI uri = this.getClass().getClassLoader().getResource("rita-static.zip").toURI();
-        driver.setCacheArchives(new URI[] { uri });
+        driver.addCacheFile(uri);
 
         driver.withInput(new Text("12478"), new Text("3"));
         driver.withOutput(new IntWritable(3), new Text("John F. Kennedy International"));

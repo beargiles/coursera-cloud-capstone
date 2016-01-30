@@ -292,7 +292,7 @@ public class CarrierOnTimePerformanceDriver extends Configured implements Tool {
 
             int counter = 0;
             for (AirlineFlightDelays delay : delays) {
-                if (counter++ >= 10) {
+                if (counter++ >= n) {
                     break;
                 }
                 final int airlineId = delay.getAirlineId();

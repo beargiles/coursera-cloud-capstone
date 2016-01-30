@@ -126,7 +126,7 @@ public class AirportOnTimePerformanceDriverTest {
     @Test
     @Ignore
     public void testCompareArrivalDelayReduceTopAirlines() throws IOException {
-        final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
+        // final ReduceDriver<IntWritable, AirlineFlightDelaysWritable, NullWritable, Text> driver = new ReduceDriver<>();
         // FIXME: implement
     }
 }

@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -174,11 +177,11 @@ public class PopularAirportsDriver extends Configured implements Tool {
     }
 
     /**
-     * This reducer finds the top N records. TODO: allow N to be specified.
+     * This reducer finds the top N records.
      */
     public static class TopAirportsReduce extends Reducer<NullWritable, AirportFlightsWritable, IntWritable, Text> {
         private Integer n;
-        private TreeSet<Pair<Integer, Integer>> airports = new TreeSet<>();
+        private TreeSet<AirportFlightsWritable> airports;
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -193,6 +196,19 @@ public class PopularAirportsDriver extends Configured implements Tool {
                     }
                 }
             }
+            
+            airports = new TreeSet<>(new Comparator<AirportFlightsWritable>(){
+                public int compare(AirportFlightsWritable p, AirportFlightsWritable q) {
+                    int l = p.getFlights();
+                    int r = q.getFlights();
+                    if (l < r) {
+                        return -1;
+                    } else if (l > r) {
+                        return 1;
+                    }
+                    return 0;
+                }
+            });
         }
 
         /**
@@ -204,11 +220,11 @@ public class PopularAirportsDriver extends Configured implements Tool {
                 Reducer<NullWritable, AirportFlightsWritable, IntWritable, Text>.Context context)
                         throws IOException, InterruptedException {
 
+            // create copy of input value since hadoop seems to be reusing
+            // values. Otherwise all entries in the set have the same value.
             for (AirportFlightsWritable airport : values) {
-                final Integer airportId = airport.getAirportId();
-                final Integer flights = airport.getFlights();
-                airports.add(new Pair<>(flights, airportId));
-                while (airports.size() > n) {
+                airports.add(new AirportFlightsWritable(airport.getAirportId(), airport.getFlights()));
+                if (airports.size() > n) {
                     airports.remove(airports.first());
                 }
             }
@@ -223,9 +239,12 @@ public class PopularAirportsDriver extends Configured implements Tool {
         protected void cleanup(Reducer<NullWritable, AirportFlightsWritable, IntWritable, Text>.Context context)
                 throws IOException, InterruptedException {
 
-            for (Pair<Integer, Integer> airport : airports) {
-                final int flights = airport.getKey();
-                final int airportId = airport.getValue();
+            List<AirportFlightsWritable> list = new ArrayList<>(airports);
+            Collections.reverse(list);
+            
+            for (AirportFlightsWritable airport : list) {
+                final int flights = airport.getFlights();
+                final int airportId = airport.getAirportId();
                 if (LookupUtil.AIRPORTS.containsKey(airportId)) {
                     context.write(new IntWritable(flights),
                             new Text(String.format("%s", LookupUtil.AIRPORTS.get(airportId).getName())));

@@ -3,14 +3,9 @@ package com.coyotesong.coursera.cloud.hadoop.mapreduce;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.URL;
 import java.nio.file.Files;
 
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.hadoop.conf.Configuration;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -23,9 +18,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import com.coyotesong.coursera.cloud.configuration.DefaultConfig;
 import com.coyotesong.coursera.cloud.configuration.RepositoryConfiguration;
-import com.coyotesong.coursera.cloud.domain.FlightInfo;
 import com.coyotesong.coursera.cloud.repository.FlightInfoRepository;
-import com.coyotesong.coursera.cloud.util.LookupUtil;
 
 /**
  * Test class to compare on-time arrival performance.
@@ -42,7 +35,7 @@ public class AirportOnTimePerformanceDriverDeepTest extends AbstractDriverDeepTe
     private FlightInfoRepository flightInfoRepository;
  
     @Test
-    //@Ignore
+    @Ignore
     public void test() throws Exception {
         final String filename = "360692348_T_ONTIME.csv";
 
